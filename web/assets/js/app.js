@@ -6,6 +6,10 @@
  *   3. Breaking news ticker (CSS animation fallback)
  *   4. Back-to-top button
  *   5. Lazy-load polyfill (IntersectionObserver)
+ *   6. Reading progress bar (article pages only)
+ *   7. Skeleton shimmer on news card images
+ *   8. Social share – copy link button
+ *   9. PWA service worker registration
  */
 
 (function () {
@@ -146,6 +150,75 @@
             });
         });
         lazyImgs.forEach(function (img) { io.observe(img); });
+    }
+
+    /* ── 6. Reading Progress Bar ───────────────────────────── */
+    // Only activate on article pages (when .article element is present)
+    const progressBar = document.getElementById('readingProgress');
+    const articleEl   = document.querySelector('.article');
+
+    if (progressBar && articleEl) {
+        window.addEventListener('scroll', function () {
+            const articleTop    = articleEl.offsetTop;
+            const articleHeight = articleEl.offsetHeight;
+            const scrolled      = window.scrollY - articleTop;
+            const pct           = Math.min(100, Math.max(0,
+                (scrolled / (articleHeight - window.innerHeight)) * 100
+            ));
+            progressBar.style.width = pct + '%';
+            progressBar.setAttribute('aria-valuenow', Math.round(pct));
+        }, { passive: true });
+    }
+
+    /* ── 7. Skeleton Shimmer on news-card images ───────────── */
+    // Add .is-loading while the image hasn't loaded yet, remove on load/error.
+    document.querySelectorAll('.news-card__img, .search-result__img').forEach(function (img) {
+        if (!img.complete) {
+            img.classList.add('is-loading');
+            img.addEventListener('load',  function () { img.classList.remove('is-loading'); });
+            img.addEventListener('error', function () { img.classList.remove('is-loading'); });
+        }
+    });
+
+    /* ── 8. Social Share – Copy Link ───────────────────────── */
+    document.querySelectorAll('.share-btn--copy').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const url = btn.dataset.url || window.location.href;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(function () {
+                    btn.textContent = '✓ Copied!';
+                    btn.classList.add('copied');
+                    setTimeout(function () {
+                        btn.textContent = 'Copy Link';
+                        btn.classList.remove('copied');
+                    }, 2000);
+                });
+            } else {
+                // Fallback for older browsers
+                const ta = document.createElement('textarea');
+                ta.value = url;
+                ta.style.position = 'fixed';
+                ta.style.opacity  = '0';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                try { document.execCommand('copy'); } catch (_) { /* ignore */ }
+                document.body.removeChild(ta);
+                btn.textContent = '✓ Copied!';
+                setTimeout(function () { btn.textContent = 'Copy Link'; }, 2000);
+            }
+        });
+    });
+
+    /* ── 9. PWA Service Worker Registration ────────────────── */
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register('/web/sw.js')
+                .catch(function (err) {
+                    // Silently ignore registration failures (e.g. file not deployed yet)
+                    console.warn('SW registration failed:', err);
+                });
+        });
     }
 
 })();

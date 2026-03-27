@@ -104,7 +104,20 @@ function mediaUrl(string $filename, string $subdir, string $fallback = ''): stri
 }
 
 
-function formatDate(string $datetime, string $format = 'M j, Y'): string
+/**
+ * Estimate reading time in minutes.
+ * Uses an average adult reading speed of 200 words per minute.
+ * Returns at least 1 minute.
+ */
+function readingTime(string $content, int $wpm = 200): int
+{
+    $wordCount = str_word_count(strip_tags($content));
+    return max(1, (int)ceil($wordCount / $wpm));
+}
+
+/**
+ * Format a MySQL datetime string for display.
+ */
 {
     try {
         $dt = new DateTime($datetime);

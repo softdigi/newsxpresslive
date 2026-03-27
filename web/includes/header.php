@@ -35,6 +35,10 @@ $currentUrl = SITE_URL . parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH)
     <?php renderSeoMeta($seoMeta ?? []); ?>
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="<?= SITE_URL ?>/assets/img/favicon.ico">
+    <!-- PWA: manifest + theme colour + home-screen icon -->
+    <link rel="manifest" href="<?= SITE_URL ?>/manifest.json">
+    <meta name="theme-color" content="#e50914">
+    <link rel="apple-touch-icon" href="<?= SITE_URL ?>/assets/img/icon-192.png">
     <!-- Stylesheet -->
     <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css">
 </head>
@@ -42,6 +46,10 @@ $currentUrl = SITE_URL . parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH)
 
 <!-- ===== SKIP NAVIGATION (keyboard / screen-reader accessibility) ===== -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- ===== READING PROGRESS BAR (visible on article pages only, controlled by JS) ===== -->
+<div class="reading-progress" id="readingProgress" role="progressbar"
+     aria-label="Reading progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
 
 <!-- ===== TOP BAR ===== -->
 <div class="topbar">

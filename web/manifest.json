@@ -1,0 +1,34 @@
+{
+    "name": "NewsXpressLive",
+    "short_name": "NewsXpress",
+    "description": "Breaking News, Latest Updates — NewsXpressLive",
+    "start_url": "/web/?utm_source=pwa",
+    "display": "standalone",
+    "orientation": "any",
+    "background_color": "#111111",
+    "theme_color": "#e50914",
+    "lang": "en",
+    "categories": ["news"],
+    "icons": [
+        {
+            "src": "/web/assets/img/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/web/assets/img/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "Search News",
+            "url": "/web/news/search.php",
+            "description": "Search for the latest news"
+        }
+    ]
+}

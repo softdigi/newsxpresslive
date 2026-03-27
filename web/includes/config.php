@@ -4,6 +4,12 @@
  * NewsXpressLive - PDO Connection
  */
 
+// Start PHP session (used for category-preference personalization).
+// Guard avoids double-start when pages include config via multiple paths.
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'newsxpresslive');
 define('DB_USER', 'root');

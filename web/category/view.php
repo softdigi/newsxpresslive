@@ -28,6 +28,14 @@ if (!$category) {
     exit;
 }
 
+// Track category preference in session for homepage personalisation.
+// We cap each category at 99 to prevent integer overflow on long sessions.
+if (!isset($_SESSION['pref_cats']) || !is_array($_SESSION['pref_cats'])) {
+    $_SESSION['pref_cats'] = [];
+}
+$cid = (int)$category['id'];
+$_SESSION['pref_cats'][$cid] = min(99, ($_SESSION['pref_cats'][$cid] ?? 0) + 1);
+
 $pagination = getPagination(12);
 $page       = $pagination['page'];
 $offset     = $pagination['offset'];

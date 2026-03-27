@@ -64,6 +64,22 @@ if (!empty($news['category_id'])) {
     $relatedNews = $relStmt->fetchAll();
 }
 
+/* ── Next article (same category, older or any order) ───────────────── */
+$nextArticle = null;
+if (!empty($news['category_id'])) {
+    $nextStmt = $pdo->prepare(
+        'SELECT title, slug, featured_image FROM news
+         WHERE status = :status AND category_id = :cat_id AND id != :id
+         ORDER BY created_at DESC LIMIT 1'
+    );
+    $nextStmt->execute([
+        ':status' => 'published',
+        ':cat_id' => $news['category_id'],
+        ':id'     => $news['id'],
+    ]);
+    $nextArticle = $nextStmt->fetch() ?: null;
+}
+
 /* ── SEO meta + structured data ─────────────────────────────────────── */
 $seoMeta = [
     'title'        => $news['title'],
@@ -74,6 +90,8 @@ $seoMeta = [
     'keywords'     => !empty($news['category_name']) ? $news['category_name'] : '',
     'author'       => !empty($news['reporter_name']) ? $news['reporter_name'] : '',
     'published_at' => date('c', strtotime($news['created_at'])),
+    // Prefetch the next article so it loads instantly when the user clicks
+    'prefetch_url' => $nextArticle ? newsUrl($nextArticle['slug']) : '',
 ];
 
 // Sidebar – reuse the latest-news query, capped at 6 for efficiency
@@ -161,10 +179,31 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
                       datetime="<?= htmlspecialchars($news['created_at'], ENT_QUOTES, 'UTF-8') ?>">
                     <?= formatDate($news['created_at'], 'F j, Y \a\t g:i A') ?>
                 </time>
+                <span class="article__read-time">
+                    &#9201; <?= readingTime($news['content']) ?> min read
+                </span>
             </div>
         </header>
 
-        <!-- Featured image -->
+        <!-- Social Share Bar -->
+        <?php
+        $shareUrl   = htmlspecialchars(newsUrl($news['slug']), ENT_QUOTES, 'UTF-8');
+        $shareTitle = htmlspecialchars($news['title'], ENT_QUOTES, 'UTF-8');
+        ?>
+        <div class="share-bar" aria-label="Share this article">
+            <span class="share-bar__label">Share:</span>
+            <a href="https://api.whatsapp.com/send?text=<?= rawurlencode($news['title'] . ' ' . newsUrl($news['slug'])) ?>"
+               class="share-btn share-btn--wa" target="_blank" rel="noopener noreferrer"
+               aria-label="Share on WhatsApp">WhatsApp</a>
+            <a href="https://twitter.com/intent/tweet?url=<?= rawurlencode(newsUrl($news['slug'])) ?>&text=<?= rawurlencode($news['title']) ?>"
+               class="share-btn share-btn--tw" target="_blank" rel="noopener noreferrer"
+               aria-label="Share on Twitter">Twitter</a>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=<?= rawurlencode(newsUrl($news['slug'])) ?>"
+               class="share-btn share-btn--fb" target="_blank" rel="noopener noreferrer"
+               aria-label="Share on Facebook">Facebook</a>
+            <button class="share-btn share-btn--copy" data-url="<?= $shareUrl ?>"
+                    aria-label="Copy link to clipboard">Copy Link</button>
+        </div>
         <?php if (!empty($news['featured_image'])): ?>
         <figure class="article__hero">
             <img src="<?= htmlspecialchars(newsImage($news['featured_image']), ENT_QUOTES, 'UTF-8') ?>"
@@ -247,6 +286,27 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
             <?php endforeach; ?>
         </div>
     </section>
+    <?php endif; ?>
+    <!-- ===== NEXT ARTICLE ===== -->
+    <?php if ($nextArticle): ?>
+    <div class="next-article-box">
+        <span class="next-article-box__label">Next Article</span>
+        <a href="<?= htmlspecialchars(newsUrl($nextArticle['slug']), ENT_QUOTES, 'UTF-8') ?>"
+           class="next-article-box__link">
+            <?php if (!empty($nextArticle['featured_image'])): ?>
+            <img src="<?= htmlspecialchars(newsImage($nextArticle['featured_image']), ENT_QUOTES, 'UTF-8') ?>"
+                 alt="<?= htmlspecialchars($nextArticle['title'], ENT_QUOTES, 'UTF-8') ?>"
+                 class="next-article-box__img"
+                 loading="lazy">
+            <?php endif; ?>
+            <div class="next-article-box__body">
+                <p class="next-article-box__title">
+                    <?= htmlspecialchars($nextArticle['title'], ENT_QUOTES, 'UTF-8') ?>
+                </p>
+                <span class="next-article-box__cta">Read now &rarr;</span>
+            </div>
+        </a>
+    </div>
     <?php endif; ?>
 
 </div><!-- /.layout-main -->

@@ -73,6 +73,11 @@ function renderSeoMeta(array $meta = []): void
 
     echo '<link rel="canonical" href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '">' . "\n";
 
+    // Optional prefetch of the next article (set via $meta['prefetch_url'])
+    if (!empty($meta['prefetch_url'])) {
+        echo '<link rel="prefetch" href="' . htmlspecialchars($meta['prefetch_url'], ENT_QUOTES, 'UTF-8') . '">' . "\n";
+    }
+
     // ── Open Graph ─────────────────────────────────────────────────────────
     echo '<meta property="og:title" content="' . $title . '">' . "\n";
     echo '<meta property="og:description" content="' . $description . '">' . "\n";

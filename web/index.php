@@ -77,18 +77,45 @@ if (!empty($allCategories)) {
     }
 }
 
-/* ── 4. Sidebar – trending (most recent 6 items) ───────────────────── */
+/* ── 4. Sidebar – SMART TRENDING (time-decay score) ────────────────── */
+// Score = 1000 / (hours_since_published + 2), so newer articles rank higher.
+// This mimics the Hacker News time-decay algorithm without needing a views counter.
 $trendingStmt = $pdo->prepare(
     'SELECT n.title, n.slug, n.featured_image, n.created_at,
-            c.name AS category_name
+            c.name AS category_name,
+            ROUND(1000 / (TIMESTAMPDIFF(HOUR, n.created_at, NOW()) + 2), 4) AS trend_score
      FROM news n
      LEFT JOIN categories c ON c.id = n.category_id
      WHERE n.status = :status
-     ORDER BY n.created_at DESC
+     ORDER BY trend_score DESC
      LIMIT 6'
 );
 $trendingStmt->execute([':status' => 'published']);
 $trendingNews = $trendingStmt->fetchAll();
+
+/* ── 5. "For You" – session-based personalisation ───────────────────── */
+// Populated when the user has visited at least one category page.
+// Tracks $_SESSION['pref_cats'][ category_id ] = visit_count.
+$forYouNews     = [];
+$forYouCatName  = '';
+if (!empty($_SESSION['pref_cats']) && is_array($_SESSION['pref_cats'])) {
+    arsort($_SESSION['pref_cats']);                  // highest visit count first
+    $topCatId = (int)array_key_first($_SESSION['pref_cats']);
+    if ($topCatId > 0) {
+        $fyStmt = $pdo->prepare(
+            'SELECT n.id, n.title, n.slug, n.featured_image, n.content, n.created_at,
+                    c.name AS category_name, c.slug AS category_slug
+             FROM news n
+             INNER JOIN categories c ON c.id = n.category_id
+             WHERE n.status = :status AND n.category_id = :cat_id
+             ORDER BY n.created_at DESC
+             LIMIT 4'
+        );
+        $fyStmt->execute([':status' => 'published', ':cat_id' => $topCatId]);
+        $forYouNews    = $fyStmt->fetchAll();
+        $forYouCatName = $forYouNews[0]['category_name'] ?? '';
+    }
+}
 
 /* ── SEO meta ───────────────────────────────────────────────────────── */
 // Use titleFull so renderSeoMeta() does NOT append "| SITE_NAME" again,
@@ -188,9 +215,55 @@ require_once __DIR__ . '/includes/header.php';
                     <p class="news-card__excerpt">
                         <?= htmlspecialchars(excerpt($news['content']), ENT_QUOTES, 'UTF-8') ?>
                     </p>
-                    <time class="news-card__date" datetime="<?= htmlspecialchars($news['created_at'], ENT_QUOTES, 'UTF-8') ?>">
-                        <?= formatDate($news['created_at']) ?>
-                    </time>
+                    <div class="news-card__footer">
+                        <time class="news-card__date" datetime="<?= htmlspecialchars($news['created_at'], ENT_QUOTES, 'UTF-8') ?>">
+                            <?= formatDate($news['created_at']) ?>
+                        </time>
+                        <span class="news-card__read-time"><?= readingTime($news['content']) ?> min read</span>
+                    </div>
+                </div>
+            </article>
+            <?php endforeach; ?>
+        </div>
+    </section>
+    <?php endif; ?>
+
+    <!-- ===== "FOR YOU" PERSONALISED SECTION ===== -->
+    <?php if (!empty($forYouNews)): ?>
+    <section class="section for-you-section" aria-labelledby="for-you-heading">
+        <h2 class="section__title" id="for-you-heading">
+            <span class="section__title-accent">For You</span>
+            <span class="for-you-badge">✦ Personalised</span>
+            <?php if (!empty($forYouCatName)): ?>
+            <a href="<?= htmlspecialchars(categoryUrl($forYouNews[0]['category_slug']), ENT_QUOTES, 'UTF-8') ?>"
+               class="section__view-all">More <?= htmlspecialchars($forYouCatName, ENT_QUOTES, 'UTF-8') ?> &rarr;</a>
+            <?php endif; ?>
+        </h2>
+        <div class="news-grid news-grid--4col">
+            <?php foreach ($forYouNews as $item): ?>
+            <article class="news-card news-card--fy">
+                <a href="<?= htmlspecialchars(newsUrl($item['slug']), ENT_QUOTES, 'UTF-8') ?>"
+                   class="news-card__img-link">
+                    <img src="<?= htmlspecialchars(newsImage($item['featured_image']), ENT_QUOTES, 'UTF-8') ?>"
+                         alt="<?= htmlspecialchars($item['title'], ENT_QUOTES, 'UTF-8') ?>"
+                         class="news-card__img"
+                         loading="lazy">
+                </a>
+                <div class="news-card__body">
+                    <h3 class="news-card__title">
+                        <a href="<?= htmlspecialchars(newsUrl($item['slug']), ENT_QUOTES, 'UTF-8') ?>">
+                            <?= htmlspecialchars($item['title'], ENT_QUOTES, 'UTF-8') ?>
+                        </a>
+                    </h3>
+                    <p class="news-card__excerpt">
+                        <?= htmlspecialchars(excerpt($item['content'], 80), ENT_QUOTES, 'UTF-8') ?>
+                    </p>
+                    <div class="news-card__footer">
+                        <time class="news-card__date" datetime="<?= htmlspecialchars($item['created_at'], ENT_QUOTES, 'UTF-8') ?>">
+                            <?= formatDate($item['created_at']) ?>
+                        </time>
+                        <span class="news-card__read-time"><?= readingTime($item['content']) ?> min read</span>
+                    </div>
                 </div>
             </article>
             <?php endforeach; ?>
