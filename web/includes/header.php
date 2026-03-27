@@ -40,6 +40,9 @@ $currentUrl = SITE_URL . parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH)
 </head>
 <body>
 
+<!-- ===== SKIP NAVIGATION (keyboard / screen-reader accessibility) ===== -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
 <!-- ===== TOP BAR ===== -->
 <div class="topbar">
     <div class="container topbar__inner">
@@ -109,9 +112,9 @@ $currentUrl = SITE_URL . parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH)
 
 <!-- ===== BREAKING NEWS TICKER ===== -->
 <?php if (!empty($breakingNews)): ?>
-<div class="ticker" role="marquee" aria-label="Breaking news">
+<div class="ticker" role="region" aria-label="Breaking news" aria-live="off">
     <div class="container ticker__inner">
-        <span class="ticker__label">BREAKING</span>
+        <span class="ticker__label" aria-hidden="true">BREAKING</span>
         <div class="ticker__track-wrapper">
             <ul class="ticker__track" id="breakingTicker">
                 <?php foreach ($breakingNews as $item): ?>
@@ -129,4 +132,4 @@ $currentUrl = SITE_URL . parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH)
 <?php endif; ?>
 
 <!-- ===== MAIN CONTENT wrapper starts below ===== -->
-<main class="main-content">
+<main class="main-content" id="main-content">

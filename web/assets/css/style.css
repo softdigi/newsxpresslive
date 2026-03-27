@@ -56,6 +56,32 @@ ul { list-style: none; }
     overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap;
 }
 
+/* Skip navigation link – visible only on keyboard focus */
+.skip-link {
+    position: absolute;
+    top: -100%;
+    left: 1rem;
+    z-index: 9999;
+    background: var(--color-primary);
+    color: #fff;
+    padding: .5rem 1rem;
+    border-radius: 0 0 var(--radius) var(--radius);
+    font-weight: 700;
+    font-size: .9rem;
+    text-decoration: none;
+    transition: top .2s;
+}
+.skip-link:focus { top: 0; }
+
+/* ── Global keyboard focus styles ─────────────────────────── */
+:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+/* Remove default outline for mouse users who still use :focus */
+:focus:not(:focus-visible) { outline: none; }
+
 .container {
     width: 100%;
     max-width: var(--max-width);
@@ -821,4 +847,22 @@ mark {
     .page-body { padding: 1rem .75rem; }
     .news-grid { grid-template-columns: 1fr; }
     .article { padding: 1rem; }
+}
+
+/* ── Print styles ──────────────────────────────────────────── */
+@media print {
+    .topbar, .site-header, .main-nav, .ticker,
+    .hero-slider__btn, .hero-slider__dots,
+    .layout-sidebar, .site-footer,
+    .back-to-top, .skip-link,
+    .search-form, .nav-toggle { display: none !important; }
+
+    body { background: #fff; color: #000; font-size: 12pt; }
+    .container { max-width: 100%; padding: 0; }
+    .page-body { grid-template-columns: 1fr; }
+    .article { box-shadow: none; border: none; padding: 0; }
+    .article__title { font-size: 20pt; }
+    a { color: #000; text-decoration: underline; }
+    a[href]::after { content: ' (' attr(href) ')'; font-size: 9pt; color: #555; }
+    img { max-height: 300px; object-fit: contain; }
 }

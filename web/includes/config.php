@@ -10,7 +10,10 @@ define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');
 
-define('SITE_URL', 'http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/web');
+// SECURITY: Do NOT derive SITE_URL from HTTP_HOST – that header can be spoofed
+// (host-header injection → cache poisoning, password-reset link hijacking, etc.).
+// Set this to the exact public URL of the site. Trailing slash omitted intentionally.
+define('SITE_URL', 'http://localhost/web');
 define('SITE_NAME', 'NewsXpressLive');
 define('SITE_TAGLINE', 'Breaking News, Latest Updates');
 define('UPLOADS_URL', SITE_URL . '/uploads/news/');

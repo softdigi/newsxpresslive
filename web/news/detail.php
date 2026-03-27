@@ -35,9 +35,9 @@ $stmt->execute([':slug' => $slug, ':status' => 'published']);
 $news = $stmt->fetch();
 
 if (!$news) {
-    // 404-ish fallback
+    // True 404 — tell search engines not to index this page
     http_response_code(404);
-    $seoMeta = ['title' => 'Article Not Found'];
+    $seoMeta = ['title' => 'Article Not Found', 'robots' => 'noindex,nofollow'];
     require_once __DIR__ . '/../includes/header.php';
     echo '<div class="container"><p class="not-found">The article you are looking for does not exist or has been removed.</p></div>';
     require_once __DIR__ . '/../includes/footer.php';
@@ -64,17 +64,41 @@ if (!empty($news['category_id'])) {
     $relatedNews = $relStmt->fetchAll();
 }
 
-/* ── SEO meta ───────────────────────────────────────────────────────── */
+/* ── SEO meta + structured data ─────────────────────────────────────── */
 $seoMeta = [
-    'title'       => $news['title'],
-    'description' => excerpt($news['content'], 160),
-    'image'       => newsImage($news['featured_image']),
-    'url'         => newsUrl($news['slug']),
-    'type'        => 'article',
-    'keywords'    => !empty($news['category_name']) ? $news['category_name'] : '',
+    'title'        => $news['title'],
+    'description'  => excerpt($news['content'], 160),
+    'image'        => newsImage($news['featured_image']),
+    'url'          => newsUrl($news['slug']),
+    'type'         => 'article',
+    'keywords'     => !empty($news['category_name']) ? $news['category_name'] : '',
+    'author'       => !empty($news['reporter_name']) ? $news['reporter_name'] : '',
+    'published_at' => date('c', strtotime($news['created_at'])),
 ];
 
+// Sidebar – reuse the latest-news query, capped at 6 for efficiency
+$sideStmt = $pdo->prepare(
+    'SELECT title, slug, created_at FROM news
+     WHERE status = :status ORDER BY created_at DESC LIMIT 6'
+);
+$sideStmt->execute([':status' => 'published']);
+$sideItems = $sideStmt->fetchAll();
+
 require_once __DIR__ . '/../includes/header.php';
+
+// ── JSON-LD Structured Data ──────────────────────────────────────────────
+renderJsonLd(buildNewsArticleJsonLd($news));
+
+// BreadcrumbList
+$breadcrumbItems = [['name' => 'Home', 'url' => SITE_URL . '/']];
+if (!empty($news['category_name'])) {
+    $breadcrumbItems[] = [
+        'name' => $news['category_name'],
+        'url'  => categoryUrl($news['category_slug']),
+    ];
+}
+$breadcrumbItems[] = ['name' => $news['title'], 'url' => newsUrl($news['slug'])];
+renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
 ?>
 
 <div class="container page-body">
@@ -92,7 +116,12 @@ require_once __DIR__ . '/../includes/header.php';
                 <?= htmlspecialchars($news['category_name'], ENT_QUOTES, 'UTF-8') ?>
             </a>
             <?php endif; ?>
-            &rsaquo; <span><?= htmlspecialchars(mb_substr($news['title'], 0, 60), ENT_QUOTES, 'UTF-8') ?>...</span>
+            &rsaquo; <span><?= htmlspecialchars(
+                mb_strlen($news['title']) > 60
+                    ? mb_substr($news['title'], 0, 60) . '...'
+                    : $news['title'],
+                ENT_QUOTES, 'UTF-8'
+            ) ?></span>
         </nav>
 
         <!-- Header -->
@@ -157,8 +186,14 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Reporter info card -->
         <?php if (!empty($news['reporter_name'])): ?>
         <div class="reporter-card">
-            <?php if (!empty($news['reporter_photo'])): ?>
-            <img src="<?= htmlspecialchars(SITE_URL . '/uploads/reporters/' . $news['reporter_photo'], ENT_QUOTES, 'UTF-8') ?>"
+            <?php
+            // Use mediaUrl() to validate the filename (prevents path traversal)
+            $reporterPhotoUrl = !empty($news['reporter_photo'])
+                ? mediaUrl($news['reporter_photo'], 'reporters')
+                : '';
+            ?>
+            <?php if ($reporterPhotoUrl !== ''): ?>
+            <img src="<?= htmlspecialchars($reporterPhotoUrl, ENT_QUOTES, 'UTF-8') ?>"
                  alt="<?= htmlspecialchars($news['reporter_name'], ENT_QUOTES, 'UTF-8') ?>"
                  class="reporter-card__photo"
                  loading="lazy">
@@ -218,15 +253,6 @@ require_once __DIR__ . '/../includes/header.php';
 
 <!-- ===== SIDEBAR ===== -->
 <aside class="layout-sidebar" aria-label="Sidebar">
-    <?php
-    // Sidebar: trending (reuse)
-    $sideTrend = $pdo->prepare(
-        'SELECT title, slug, featured_image, created_at FROM news
-         WHERE status = :status ORDER BY created_at DESC LIMIT 6'
-    );
-    $sideTrend->execute([':status' => 'published']);
-    $sideItems = $sideTrend->fetchAll();
-    ?>
     <?php if (!empty($sideItems)): ?>
     <div class="widget">
         <h3 class="widget__title">Latest News</h3>

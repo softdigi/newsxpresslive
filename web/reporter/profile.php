@@ -78,8 +78,13 @@ require_once __DIR__ . '/../includes/header.php';
         </nav>
 
         <div class="profile-card">
-            <?php if (!empty($reporter['photo'])): ?>
-            <img src="<?= htmlspecialchars(SITE_URL . '/uploads/reporters/' . $reporter['photo'], ENT_QUOTES, 'UTF-8') ?>"
+            <?php
+            $reporterPhotoUrl = !empty($reporter['photo'])
+                ? mediaUrl($reporter['photo'], 'reporters')
+                : '';
+            ?>
+            <?php if ($reporterPhotoUrl !== ''): ?>
+            <img src="<?= htmlspecialchars($reporterPhotoUrl, ENT_QUOTES, 'UTF-8') ?>"
                  alt="<?= htmlspecialchars($reporter['name'], ENT_QUOTES, 'UTF-8') ?>"
                  class="profile-card__photo"
                  loading="lazy">

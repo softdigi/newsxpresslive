@@ -56,6 +56,8 @@ $seoMeta = [
     'title'       => $rawQuery !== '' ? 'Search: ' . $rawQuery : 'Search News',
     'description' => 'Search results for "' . $rawQuery . '" on ' . SITE_NAME,
     'url'         => SITE_URL . '/news/search.php?q=' . urlencode($rawQuery),
+    // Search result pages and their paginated variants should not be indexed
+    'robots'      => 'noindex,follow',
 ];
 
 require_once __DIR__ . '/../includes/header.php';

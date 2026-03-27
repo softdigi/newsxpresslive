@@ -43,12 +43,15 @@ $latestNews = $latestStmt->fetchAll();
 $allCategories = getAllCategories($pdo);
 $categoryNews  = [];
 if (!empty($allCategories)) {
-    // Build a single query for all categories at once to avoid N+1 queries
-    $catIds = array_column($allCategories, 'id');
-    // We use a subquery-with-rank approach (MySQL 8+) or a UNION workaround.
-    // For broad compatibility, fetch 4 per category using a ranked sub-select.
+    // Build a single query for all categories at once to avoid N+1 queries.
+    // We cap at 4 results per category at the PHP level after the fetch, but
+    // we also add a LIMIT at SQL level so the DB never returns more than
+    // 4 × number-of-categories rows (significantly faster on large tables).
+    $catIds       = array_column($allCategories, 'id');
     $placeholders = implode(',', array_fill(0, count($catIds), '?'));
-    $catNewsStmt  = $pdo->prepare(
+    $sqlLimit     = count($catIds) * 4; // max rows we could ever use
+
+    $catNewsStmt = $pdo->prepare(
         "SELECT n.id, n.title, n.slug, n.featured_image, n.content,
                 n.created_at, n.category_id,
                 c.name AS category_name, c.slug AS category_slug
@@ -56,7 +59,8 @@ if (!empty($allCategories)) {
          INNER JOIN categories c ON c.id = n.category_id
          WHERE n.status = 'published'
            AND n.category_id IN ($placeholders)
-         ORDER BY n.category_id, n.created_at DESC"
+         ORDER BY n.category_id, n.created_at DESC
+         LIMIT $sqlLimit"
     );
     $catNewsStmt->execute($catIds);
     $allCatNews = $catNewsStmt->fetchAll();
@@ -87,8 +91,10 @@ $trendingStmt->execute([':status' => 'published']);
 $trendingNews = $trendingStmt->fetchAll();
 
 /* ── SEO meta ───────────────────────────────────────────────────────── */
+// Use titleFull so renderSeoMeta() does NOT append "| SITE_NAME" again,
+// which would produce "NewsXpressLive – Tagline | NewsXpressLive".
 $seoMeta = [
-    'title'       => SITE_NAME . ' – ' . SITE_TAGLINE,
+    'titleFull'   => SITE_NAME . ' | ' . SITE_TAGLINE,
     'description' => 'Latest breaking news, top stories and live updates from ' . SITE_NAME,
     'url'         => SITE_URL . '/',
     'type'        => 'website',
@@ -112,7 +118,12 @@ require_once __DIR__ . '/includes/header.php';
                         <img src="<?= htmlspecialchars(newsImage($news['featured_image']), ENT_QUOTES, 'UTF-8') ?>"
                              alt="<?= htmlspecialchars($news['title'], ENT_QUOTES, 'UTF-8') ?>"
                              class="hero-slide__img"
-                             loading="lazy">
+                             <?php if ($i === 0): ?>
+                             loading="eager"
+                             fetchpriority="high"
+                             <?php else: ?>
+                             loading="lazy"
+                             <?php endif; ?>>
                     </div>
                     <div class="hero-slide__caption">
                         <?php if (!empty($news['category_name'])): ?>

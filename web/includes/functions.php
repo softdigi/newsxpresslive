@@ -81,8 +81,29 @@ function newsImage(string $filename = ''): string
 }
 
 /**
- * Format a MySQL datetime string for display.
+ * Return a safe absolute URL to a media file (reporter photo, agency logo, etc.).
+ * Validates the filename to prevent directory traversal, same rules as newsImage().
+ *
+ * @param string $filename  Bare filename stored in the DB (e.g. "photo.jpg").
+ * @param string $subdir    Sub-directory under /uploads/ (e.g. "reporters").
+ * @param string $fallback  URL to return when no valid file is found.
  */
+function mediaUrl(string $filename, string $subdir, string $fallback = ''): string
+{
+    if (
+        $filename === '' ||
+        strpos($filename, '/') !== false ||
+        strpos($filename, '\\') !== false ||
+        strpos($filename, '..') !== false ||
+        $filename[0] === '.'
+    ) {
+        return $fallback;
+    }
+
+    return SITE_URL . '/uploads/' . $subdir . '/' . rawurlencode($filename);
+}
+
+
 function formatDate(string $datetime, string $format = 'M j, Y'): string
 {
     try {

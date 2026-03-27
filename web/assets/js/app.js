@@ -95,12 +95,20 @@
         }
     }
 
-    /* ── 3. Breaking News Ticker (duplicate items for seamless loop) */
+    /* ── 3. Breaking News Ticker (duplicate items for seamless CSS loop) */
     const ticker = document.getElementById('breakingTicker');
     if (ticker && ticker.children.length > 0) {
-        // Duplicate items so the CSS animation loops seamlessly
-        const original = ticker.innerHTML;
-        ticker.innerHTML = original + original;
+        // Clone existing list items (avoids re-parsing HTML) so the
+        // CSS translate animation loops seamlessly when it wraps around.
+        const items   = Array.from(ticker.children);
+        const fragment = document.createDocumentFragment();
+        items.forEach(function (item) {
+            // aria-hidden on clones – they are purely decorative duplicates
+            const clone = item.cloneNode(true);
+            clone.setAttribute('aria-hidden', 'true');
+            fragment.appendChild(clone);
+        });
+        ticker.appendChild(fragment);
     }
 
     /* ── 4. Back-to-top Button ─────────────────────────────── */
