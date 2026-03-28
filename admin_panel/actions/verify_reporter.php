@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__.'/../includes/config.php';
 require_once __DIR__.'/../includes/auth.php';
+require_once __DIR__.'/../includes/csrf.php';
 
 /* Only admin / super_admin */
 if (!in_array($_SESSION['admin']['role'], ['admin','super_admin'])) {
@@ -8,7 +9,15 @@ if (!in_array($_SESSION['admin']['role'], ['admin','super_admin'])) {
     exit('Unauthorized');
 }
 
-$userId = (int)($_GET['id'] ?? 0);
+// SECURITY FIX: Require POST method with CSRF protection
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit('Method not allowed - use POST');
+}
+
+verify_csrf($_POST['csrf_token'] ?? '');
+
+$userId = (int)($_POST['id'] ?? 0);
 if (!$userId) {
     header("Location: ../reporters/index.php");
     exit;
