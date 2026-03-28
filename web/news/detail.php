@@ -20,6 +20,7 @@ $stmt = $pdo->prepare(
     'SELECT n.id, n.title, n.slug, n.content, n.featured_image,
             n.created_at, n.is_breaking,
             n.reporter_id, n.agency_id, n.category_id,
+            n.views,
             c.name  AS category_name, c.slug AS category_slug,
             r.name  AS reporter_name, r.photo AS reporter_photo,
             r.bio   AS reporter_bio,
@@ -42,6 +43,35 @@ if (!$news) {
     echo '<div class="container"><p class="not-found">The article you are looking for does not exist or has been removed.</p></div>';
     require_once __DIR__ . '/../includes/footer.php';
     exit;
+}
+
+/* ── Increment view count ───────────────────────────────────────────── */
+try {
+    $pdo->prepare('UPDATE news SET views = COALESCE(views, 0) + 1 WHERE id = ?')->execute([$news['id']]);
+} catch (PDOException $e) {
+    // views column might not exist - try to add it
+    if (strpos($e->getMessage(), 'views') !== false || strpos($e->getMessage(), 'Unknown column') !== false) {
+        try {
+            $pdo->exec('ALTER TABLE news ADD COLUMN views INT DEFAULT 0');
+            $pdo->prepare('UPDATE news SET views = 1 WHERE id = ?')->execute([$news['id']]);
+        } catch (PDOException $e2) {
+            // Silently ignore
+        }
+    }
+}
+
+/* ── Get article tags ───────────────────────────────────────────────── */
+$articleTags = [];
+try {
+    $tagsStmt = $pdo->prepare(
+        'SELECT t.name, t.slug FROM tags t 
+         INNER JOIN news_tags nt ON nt.tag_id = t.id 
+         WHERE nt.news_id = :news_id'
+    );
+    $tagsStmt->execute([':news_id' => $news['id']]);
+    $articleTags = $tagsStmt->fetchAll();
+} catch (PDOException $e) {
+    // Tables might not exist
 }
 
 /* ── Related news (same category, exclude current) ─────────────────── */
@@ -79,6 +109,9 @@ if (!empty($news['category_id'])) {
     ]);
     $nextArticle = $nextStmt->fetch() ?: null;
 }
+
+/* ── Extract Key Points ─────────────────────────────────────────────── */
+$keyPoints = extractKeyPoints($news['content'], 3);
 
 /* ── SEO meta + structured data ─────────────────────────────────────── */
 $seoMeta = [
@@ -123,7 +156,7 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
 <div class="layout-main">
 
     <!-- ===== ARTICLE ===== -->
-    <article class="article" itemscope itemtype="https://schema.org/NewsArticle">
+    <article class="article" itemscope itemtype="https://schema.org/NewsArticle" data-article-id="<?= (int)$news['id'] ?>">
 
         <!-- Breadcrumb -->
         <nav class="breadcrumb" aria-label="Breadcrumb">
@@ -152,7 +185,7 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
             <?php endif; ?>
 
             <?php if ($news['is_breaking']): ?>
-            <span class="badge badge--breaking">Breaking</span>
+            <span class="badge badge--breaking translatable" data-hi="ब्रेकिंग">Breaking</span>
             <?php endif; ?>
 
             <h1 class="article__title" itemprop="headline">
@@ -182,10 +215,15 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
                 <span class="article__read-time">
                     &#9201; <?= readingTime($news['content']) ?> min read
                 </span>
+                <?php if (!empty($news['views']) && $news['views'] > 0): ?>
+                <span class="article__views">
+                    👁 <?= formatViews((int)$news['views']) ?> views
+                </span>
+                <?php endif; ?>
             </div>
         </header>
 
-        <!-- Social Share Bar -->
+        <!-- Social Share Bar + Bookmark -->
         <?php
         $shareUrl   = htmlspecialchars(newsUrl($news['slug']), ENT_QUOTES, 'UTF-8');
         $shareTitle = htmlspecialchars($news['title'], ENT_QUOTES, 'UTF-8');
@@ -201,9 +239,36 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
             <a href="https://www.facebook.com/sharer/sharer.php?u=<?= rawurlencode(newsUrl($news['slug'])) ?>"
                class="share-btn share-btn--fb" target="_blank" rel="noopener noreferrer"
                aria-label="Share on Facebook">Facebook</a>
+            <a href="https://t.me/share/url?url=<?= rawurlencode(newsUrl($news['slug'])) ?>&text=<?= rawurlencode($news['title']) ?>"
+               class="share-btn share-btn--tg" target="_blank" rel="noopener noreferrer"
+               aria-label="Share on Telegram">Telegram</a>
+            <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= rawurlencode(newsUrl($news['slug'])) ?>"
+               class="share-btn share-btn--ln" target="_blank" rel="noopener noreferrer"
+               aria-label="Share on LinkedIn">LinkedIn</a>
             <button class="share-btn share-btn--copy" data-url="<?= $shareUrl ?>"
                     aria-label="Copy link to clipboard">Copy Link</button>
+            <button class="bookmark-btn" id="bookmarkBtn" 
+                    data-id="<?= (int)$news['id'] ?>"
+                    data-title="<?= $shareTitle ?>"
+                    data-slug="<?= htmlspecialchars($news['slug'], ENT_QUOTES, 'UTF-8') ?>"
+                    data-image="<?= htmlspecialchars(newsImage($news['featured_image']), ENT_QUOTES, 'UTF-8') ?>"
+                    data-date="<?= formatDate($news['created_at']) ?>">
+                <span class="bookmark-btn__icon">🔖</span> Bookmark
+            </button>
         </div>
+
+        <!-- Key Points Summary -->
+        <?php if (!empty($keyPoints)): ?>
+        <div class="key-points">
+            <h3 class="key-points__title">📌 Key Points</h3>
+            <ul class="key-points__list">
+                <?php foreach ($keyPoints as $point): ?>
+                <li class="key-points__item"><?= htmlspecialchars($point, ENT_QUOTES, 'UTF-8') ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+        <?php endif; ?>
+
         <?php if (!empty($news['featured_image'])): ?>
         <figure class="article__hero">
             <img src="<?= htmlspecialchars(newsImage($news['featured_image']), ENT_QUOTES, 'UTF-8') ?>"
@@ -221,6 +286,21 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
         <div class="article__body" itemprop="articleBody">
             <?= $news['content'] ?>
         </div>
+
+        <!-- Tags Section -->
+        <?php if (!empty($articleTags)): ?>
+        <div class="article-tags">
+            <h4 class="article-tags__title">🏷️ Tags</h4>
+            <div class="article-tags__list">
+                <?php foreach ($articleTags as $tag): ?>
+                <a href="<?= htmlspecialchars(tagUrl($tag['slug']), ENT_QUOTES, 'UTF-8') ?>" 
+                   class="tag-badge">
+                    <?= htmlspecialchars($tag['name'], ENT_QUOTES, 'UTF-8') ?>
+                </a>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <!-- Reporter info card -->
         <?php if (!empty($news['reporter_name'])): ?>
@@ -315,7 +395,7 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
 <aside class="layout-sidebar" aria-label="Sidebar">
     <?php if (!empty($sideItems)): ?>
     <div class="widget">
-        <h3 class="widget__title">Latest News</h3>
+        <h3 class="widget__title translatable" data-hi="ताज़ा खबर">Latest News</h3>
         <ul class="trending-list">
             <?php foreach ($sideItems as $i => $item): ?>
             <li class="trending-list__item">
@@ -337,7 +417,7 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
 
     <!-- Categories widget -->
     <div class="widget">
-        <h3 class="widget__title">Categories</h3>
+        <h3 class="widget__title translatable" data-hi="श्रेणियाँ">Categories</h3>
         <ul class="cat-list">
             <?php foreach (getAllCategories($pdo) as $cat): ?>
             <li>

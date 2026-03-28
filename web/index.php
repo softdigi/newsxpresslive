@@ -28,7 +28,7 @@ $featuredNews = $featuredStmt->fetchAll();
 
 /* ── 2. Latest news grid (9 items) ─────────────────────────────────── */
 $latestStmt = $pdo->prepare(
-    'SELECT n.id, n.title, n.slug, n.featured_image, n.content, n.created_at,
+    'SELECT n.id, n.title, n.slug, n.featured_image, n.content, n.created_at, n.views,
             c.name AS category_name, c.slug AS category_slug
      FROM news n
      LEFT JOIN categories c ON c.id = n.category_id
@@ -188,7 +188,7 @@ require_once __DIR__ . '/includes/header.php';
     <?php if (!empty($latestNews)): ?>
     <section class="section" aria-labelledby="latest-heading">
         <h2 class="section__title" id="latest-heading">
-            <span class="section__title-accent">Latest</span> News
+            <span class="section__title-accent translatable" data-hi="ताज़ा">Latest</span> <span class="translatable" data-hi="खबर">News</span>
         </h2>
         <div class="news-grid">
             <?php foreach ($latestNews as $news): ?>
@@ -220,10 +220,21 @@ require_once __DIR__ . '/includes/header.php';
                             <?= formatDate($news['created_at']) ?>
                         </time>
                         <span class="news-card__read-time"><?= readingTime($news['content']) ?> min read</span>
+                        <?php if (!empty($news['views']) && $news['views'] > 0): ?>
+                        <span class="news-card__views">👁 <?= formatViews((int)$news['views']) ?></span>
+                        <?php endif; ?>
                     </div>
                 </div>
             </article>
             <?php endforeach; ?>
+        </div>
+        
+        <!-- Load More Button -->
+        <div class="load-more-wrap">
+            <button class="load-more-btn" id="loadMoreBtn">
+                <span class="load-more-btn__text">Load More News</span>
+                <span class="load-more-btn__spinner"></span>
+            </button>
         </div>
     </section>
     <?php endif; ?>
@@ -232,7 +243,7 @@ require_once __DIR__ . '/includes/header.php';
     <?php if (!empty($forYouNews)): ?>
     <section class="section for-you-section" aria-labelledby="for-you-heading">
         <h2 class="section__title" id="for-you-heading">
-            <span class="section__title-accent">For You</span>
+            <span class="section__title-accent translatable" data-hi="आपके लिए">For You</span>
             <span class="for-you-badge">✦ Personalised</span>
             <?php if (!empty($forYouCatName)): ?>
             <a href="<?= htmlspecialchars(categoryUrl($forYouNews[0]['category_slug']), ENT_QUOTES, 'UTF-8') ?>"
@@ -270,6 +281,35 @@ require_once __DIR__ . '/includes/header.php';
         </div>
     </section>
     <?php endif; ?>
+
+    <!-- ===== TRENDING IN YOUR AREA (Local News) ===== -->
+    <section class="local-news-section" id="localNewsSection" aria-labelledby="local-heading">
+        <div class="local-news__header">
+            <span class="local-news__icon">📍</span>
+            <h2 class="local-news__title" id="local-heading">Local News</h2>
+        </div>
+        <p class="local-news__message">Enable location to see news from your area.</p>
+        <button class="local-news__enable" id="localNewsEnable">
+            📍 Enable Location
+        </button>
+        <div class="news-grid news-grid--4col" id="localNewsGrid"></div>
+    </section>
+
+    <!-- ===== CITIZEN REPORTER CTA ===== -->
+    <div class="citizen-reporter-cta">
+        <h2 class="citizen-reporter-cta__title">📰 Become a Citizen Reporter</h2>
+        <p class="citizen-reporter-cta__subtitle">
+            Share stories that matter. Join 10,000+ reporters already on NewsXpressLive.
+        </p>
+        <a href="<?= SITE_URL ?>/agency/register.php" class="citizen-reporter-cta__btn">
+            Start Reporting Now →
+        </a>
+        <div class="citizen-reporter-cta__stats">
+            <span>📰 50,000+ Stories Published</span>
+            <span>🌍 150+ Countries</span>
+            <span>⚡ Real-time Updates</span>
+        </div>
+    </div>
 
     <!-- ===== CATEGORY-WISE SECTIONS ===== -->
     <?php foreach ($allCategories as $cat): ?>

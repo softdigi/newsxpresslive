@@ -118,6 +118,7 @@ function readingTime(string $content, int $wpm = 200): int
 /**
  * Format a MySQL datetime string for display.
  */
+function formatDate(string $datetime, string $format = 'M j, Y'): string
 {
     try {
         $dt = new DateTime($datetime);
@@ -296,4 +297,52 @@ function timeAgo(string $datetime): string
 function highlightKeyword(string $text, string $query): string
 {
     return highlightKeywords($text, $query);
+}
+
+/**
+ * Extract first N sentences from content as key points.
+ * Used for "Key Points" summary box on article pages.
+ *
+ * @param string $content  Raw article content (may contain HTML).
+ * @param int    $count    Number of sentences to extract.
+ * @return array           Array of sentences (min 30 chars each).
+ */
+function extractKeyPoints(string $content, int $count = 3): array
+{
+    // Strip HTML and decode entities
+    $text = html_entity_decode(strip_tags($content), ENT_QUOTES, 'UTF-8');
+    $text = preg_replace('/\s+/', ' ', trim($text));
+    
+    // Split by sentence-ending punctuation
+    $sentences = preg_split('/(?<=[.!?])\s+/', $text, -1, PREG_SPLIT_NO_EMPTY);
+    
+    $points = [];
+    foreach ($sentences as $sentence) {
+        $sentence = trim($sentence);
+        // Only include sentences with at least 30 characters
+        if (mb_strlen($sentence) >= 30) {
+            $points[] = $sentence;
+            if (count($points) >= $count) {
+                break;
+            }
+        }
+    }
+    
+    return $points;
+}
+
+/**
+ * Build URL for tag page.
+ */
+function tagUrl(string $slug): string
+{
+    return SITE_URL . '/news/tag.php?slug=' . urlencode($slug);
+}
+
+/**
+ * Build URL for bookmarks page.
+ */
+function bookmarksUrl(): string
+{
+    return SITE_URL . '/bookmarks/';
 }
