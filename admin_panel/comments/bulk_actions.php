@@ -6,7 +6,7 @@ require_once __DIR__.'/../includes/csrf.php';
 
 if (!in_array($_SESSION['admin']['role'], ['super_admin','admin','editor'])) exit('Access denied');
 
-verify_csrf($_POST['csrf_token'] ?? '');
+verify_csrf();
 
 $ids=$_POST['ids'] ?? [];
 $action=$_POST['action'] ?? '';

@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit('Method not allowed - use POST');
 }
 
-verify_csrf($_POST['csrf_token'] ?? '');
+verify_csrf();
 
 $newsId = (int)($_POST['id'] ?? 0);
 if (!$newsId) {

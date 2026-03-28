@@ -17,7 +17,7 @@ $file=$stmt->fetch(PDO::FETCH_ASSOC);
 if(!$file) exit('Not found');
 
 if($_SERVER['REQUEST_METHOD']==='POST'){
-verify_csrf($_POST['csrf_token'] ?? '');
+verify_csrf();
 $alt=trim($_POST['alt_text']);
 $stmtU=$pdo->prepare("UPDATE media SET alt_text=? WHERE id=?");
 $stmtU->execute([$alt,$id]);
