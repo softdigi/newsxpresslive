@@ -242,3 +242,58 @@ function renderPagination(int $totalItems, int $perPage, int $currentPage, strin
 
     echo '</ul></nav>';
 }
+
+/**
+ * Generate URL-friendly slug from a string.
+ * Used by trending/search pages for news links.
+ */
+function generateSlug(string $text): string
+{
+    $text = preg_replace('/[^\p{L}\p{N}\s-]/u', '', $text);
+    $text = preg_replace('/[\s-]+/', '-', $text);
+    $text = trim($text, '-');
+    return mb_strtolower($text, 'UTF-8');
+}
+
+/**
+ * Format view counts for display (e.g., 1.2K, 3.4M).
+ */
+function formatViews(int $views): string
+{
+    if ($views >= 1000000) {
+        return round($views / 1000000, 1) . 'M';
+    }
+    if ($views >= 1000) {
+        return round($views / 1000, 1) . 'K';
+    }
+    return (string)$views;
+}
+
+/**
+ * Display relative time (e.g., "2 hours ago").
+ */
+function timeAgo(string $datetime): string
+{
+    try {
+        $now  = new DateTime();
+        $past = new DateTime($datetime);
+        $diff = $now->diff($past);
+
+        if ($diff->y > 0) return $diff->y . ' year' . ($diff->y > 1 ? 's' : '') . ' ago';
+        if ($diff->m > 0) return $diff->m . ' month' . ($diff->m > 1 ? 's' : '') . ' ago';
+        if ($diff->d > 0) return $diff->d . ' day' . ($diff->d > 1 ? 's' : '') . ' ago';
+        if ($diff->h > 0) return $diff->h . ' hour' . ($diff->h > 1 ? 's' : '') . ' ago';
+        if ($diff->i > 0) return $diff->i . ' min' . ($diff->i > 1 ? 's' : '') . ' ago';
+        return 'just now';
+    } catch (Exception $e) {
+        return $datetime;
+    }
+}
+
+/**
+ * Alias for highlightKeywords for backward compatibility.
+ */
+function highlightKeyword(string $text, string $query): string
+{
+    return highlightKeywords($text, $query);
+}

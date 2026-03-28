@@ -1,0 +1,89 @@
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #f4f4f4;
+}
+
+.sidebar {
+  width: 220px;
+  background: #1e293b;
+  color: #fff;
+  position: fixed;
+  height: 100vh;
+  padding: 20px;
+}
+
+.sidebar a {
+  color: #fff;
+  display: block;
+  padding: 10px 0;
+  text-decoration: none;
+}
+
+.content {
+  margin-left: 240px;
+  padding: 20px;
+}
+
+.cards {
+  display: flex;
+  gap: 20px;
+}
+
+.card {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  width: 200px;
+  text-align: center;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.table th, .table td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+.table th {
+  background: #f1f5f9;
+  text-align: left;
+}
+
+.btn {
+  padding: 6px 10px;
+  background: #2563eb;
+  color: #fff;
+  border-radius: 4px;
+  text-decoration: none;
+  margin-right: 5px;
+  font-size: 13px;
+}
+
+.btn.green { background: #16a34a; }
+.btn.red   { background: #dc2626; }
+
+.news-box {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.action-buttons .btn {
+  margin-right: 10px;
+}
+
+.btn.orange { background: #f97316; }
+.btn.blue   { background: #2563eb; }
+.badge {
+  padding: 5px 8px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+}
+.badge.green { background: #16a34a; }
+.badge.red { background: #dc2626; }
+
