@@ -517,7 +517,13 @@
         var imgUrl = item.featured_image 
             ? '/web/uploads/news/' + encodeURIComponent(item.featured_image) 
             : '/web/assets/img/placeholder.jpg';
-        var excerpt = item.content ? item.content.substring(0, 100).replace(/<[^>]*>/g, '') + '...' : '';
+        // Strip HTML tags and escape the result to prevent XSS
+        var rawExcerpt = item.content ? item.content.substring(0, 150) : '';
+        // Use DOM-based sanitization for safe HTML stripping
+        var tempDiv = document.createElement('div');
+        tempDiv.innerHTML = rawExcerpt;
+        var excerpt = (tempDiv.textContent || tempDiv.innerText || '').substring(0, 100);
+        if (excerpt.length >= 100) excerpt += '...';
         
         return '<article class="news-card">' +
             '<a href="/web/news/detail.php?slug=' + encodeURIComponent(item.slug) + '" class="news-card__img-link">' +
