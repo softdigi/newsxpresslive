@@ -135,6 +135,26 @@ $sideStmt = $pdo->prepare(
 $sideStmt->execute([':status' => 'published']);
 $sideItems = $sideStmt->fetchAll();
 
+/* ── Ad code from settings ──────────────────────────────────────────── */
+$adHeader    = getSetting($pdo, 'ad_header');
+$adInContent = getSetting($pdo, 'ad_in_content');
+$adSidebar   = getSetting($pdo, 'ad_sidebar');
+
+/* ── Approved comments for this article ────────────────────────────── */
+$comments = [];
+try {
+    $commStmt = $pdo->prepare(
+        'SELECT id, parent_id, author_name, content, created_at
+         FROM comments
+         WHERE news_id = ? AND status = ?
+         ORDER BY created_at ASC'
+    );
+    $commStmt->execute([$news['id'], 'approved']);
+    $comments = $commStmt->fetchAll();
+} catch (PDOException $e) {
+    // Table may not exist yet — silently continue
+}
+
 require_once __DIR__ . '/../includes/header.php';
 
 // ── JSON-LD Structured Data ──────────────────────────────────────────────
@@ -151,6 +171,12 @@ if (!empty($news['category_name'])) {
 $breadcrumbItems[] = ['name' => $news['title'], 'url' => newsUrl($news['slug'])];
 renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
 ?>
+
+<?php if (!empty($adHeader)): ?>
+<div class="ad-slot ad-slot--header" style="text-align:center;padding:0.75rem 0;background:#f8f8f8;">
+    <?= $adHeader /* Ad code from admin settings — sanitized at entry point */ ?>
+</div>
+<?php endif; ?>
 
 <div class="container page-body">
 <div class="layout-main">
@@ -287,6 +313,13 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
             <?= $news['content'] ?>
         </div>
 
+        <!-- In-Content Ad -->
+        <?php if (!empty($adInContent)): ?>
+        <div class="ad-slot ad-slot--in-content" style="text-align:center;margin:1.5rem 0;">
+            <?= $adInContent ?>
+        </div>
+        <?php endif; ?>
+
         <!-- Tags Section -->
         <?php if (!empty($articleTags)): ?>
         <div class="article-tags">
@@ -335,6 +368,193 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
         <?php endif; ?>
 
     </article><!-- /.article -->
+
+    <!-- ===== COMMENTS SECTION ===== -->
+    <section class="comments-section" id="comments" aria-labelledby="comments-heading">
+        <h2 class="section__title" id="comments-heading">
+            <span class="section__title-accent">💬 Comments</span>
+            <?php if (!empty($comments)): ?>
+            <span style="font-size:0.85em;font-weight:400;color:#888">(<?= count($comments) ?>)</span>
+            <?php endif; ?>
+        </h2>
+
+        <!-- Existing approved comments -->
+        <?php if (!empty($comments)): ?>
+        <div class="comments-list" id="commentsList">
+            <?php foreach ($comments as $comment): ?>
+            <?php if ($comment['parent_id'] === null): ?>
+            <div class="comment" id="comment-<?= (int)$comment['id'] ?>">
+                <div class="comment__avatar" aria-hidden="true">
+                    <?= htmlspecialchars(mb_strtoupper(mb_substr($comment['author_name'], 0, 1, 'UTF-8'), 'UTF-8'), ENT_QUOTES, 'UTF-8') ?>
+                </div>
+                <div class="comment__body">
+                    <div class="comment__meta">
+                        <strong class="comment__author"><?= htmlspecialchars($comment['author_name'], ENT_QUOTES, 'UTF-8') ?></strong>
+                        <time class="comment__date" datetime="<?= htmlspecialchars($comment['created_at'], ENT_QUOTES, 'UTF-8') ?>">
+                            <?= timeAgo($comment['created_at']) ?>
+                        </time>
+                    </div>
+                    <p class="comment__text"><?= nl2br(htmlspecialchars($comment['content'], ENT_QUOTES, 'UTF-8')) ?></p>
+                    <button class="comment__reply-btn" data-id="<?= (int)$comment['id'] ?>"
+                            data-name="<?= htmlspecialchars($comment['author_name'], ENT_QUOTES, 'UTF-8') ?>">
+                        ↩ Reply
+                    </button>
+                </div>
+
+                <!-- Nested replies for this comment -->
+                <?php foreach ($comments as $reply): ?>
+                <?php if ((int)$reply['parent_id'] === (int)$comment['id']): ?>
+                <div class="comment comment--reply">
+                    <div class="comment__avatar" aria-hidden="true">
+                        <?= htmlspecialchars(mb_strtoupper(mb_substr($reply['author_name'], 0, 1, 'UTF-8'), 'UTF-8'), ENT_QUOTES, 'UTF-8') ?>
+                    </div>
+                    <div class="comment__body">
+                        <div class="comment__meta">
+                            <strong class="comment__author"><?= htmlspecialchars($reply['author_name'], ENT_QUOTES, 'UTF-8') ?></strong>
+                            <time class="comment__date" datetime="<?= htmlspecialchars($reply['created_at'], ENT_QUOTES, 'UTF-8') ?>">
+                                <?= timeAgo($reply['created_at']) ?>
+                            </time>
+                        </div>
+                        <p class="comment__text"><?= nl2br(htmlspecialchars($reply['content'], ENT_QUOTES, 'UTF-8')) ?></p>
+                    </div>
+                </div>
+                <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+            <?php endforeach; ?>
+        </div>
+        <?php else: ?>
+        <p class="comments-empty">No comments yet. Be the first to share your thoughts!</p>
+        <?php endif; ?>
+
+        <!-- Comment submission form -->
+        <div class="comment-form-wrap" id="commentFormWrap">
+            <h3 class="comment-form__title">Leave a Comment</h3>
+            <div class="comment-form__notice">Your comment will be visible after moderation.</div>
+            <div id="commentAlert" style="display:none" role="alert"></div>
+            <form class="comment-form" id="commentForm" novalidate>
+                <input type="hidden" name="news_id" value="<?= (int)$news['id'] ?>">
+                <input type="hidden" name="parent_id" id="commentParentId" value="">
+
+                <div id="replyingTo" style="display:none" class="comment-form__replying">
+                    Replying to <strong id="replyingToName"></strong>
+                    <button type="button" id="cancelReply" style="margin-left:8px;background:none;border:none;cursor:pointer;color:#e50914">✕ Cancel</button>
+                </div>
+
+                <div class="comment-form__row">
+                    <div class="comment-form__field">
+                        <label for="commentName">Name <span aria-hidden="true">*</span></label>
+                        <input type="text" id="commentName" name="author_name"
+                               class="comment-form__input" maxlength="80"
+                               placeholder="Your name" required autocomplete="name">
+                    </div>
+                    <div class="comment-form__field">
+                        <label for="commentEmail">Email <small>(optional, not shown)</small></label>
+                        <input type="email" id="commentEmail" name="author_email"
+                               class="comment-form__input" maxlength="255"
+                               placeholder="your@email.com" autocomplete="email">
+                    </div>
+                </div>
+
+                <div class="comment-form__field">
+                    <label for="commentContent">Comment <span aria-hidden="true">*</span></label>
+                    <textarea id="commentContent" name="content"
+                              class="comment-form__input comment-form__textarea"
+                              rows="4" maxlength="1000"
+                              placeholder="Write your comment here..." required></textarea>
+                    <small class="comment-form__char-count">
+                        <span id="commentCharCount">0</span>/1000
+                    </small>
+                </div>
+
+                <button type="submit" class="comment-form__submit" id="commentSubmitBtn">
+                    Post Comment
+                </button>
+            </form>
+        </div>
+    </section><!-- /.comments-section -->
+
+    <script>
+    (function () {
+        'use strict';
+        var form      = document.getElementById('commentForm');
+        var submitBtn = document.getElementById('commentSubmitBtn');
+        var alertBox  = document.getElementById('commentAlert');
+        var textarea  = document.getElementById('commentContent');
+        var charCount = document.getElementById('commentCharCount');
+        var parentInput = document.getElementById('commentParentId');
+        var replyingTo  = document.getElementById('replyingTo');
+        var replyingName= document.getElementById('replyingToName');
+        var cancelReply = document.getElementById('cancelReply');
+
+        // Character counter
+        if (textarea) {
+            textarea.addEventListener('input', function () {
+                charCount.textContent = this.value.length;
+            });
+        }
+
+        // Reply buttons
+        document.querySelectorAll('.comment__reply-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                parentInput.value    = this.dataset.id;
+                replyingName.textContent = this.dataset.name;
+                replyingTo.style.display = '';
+                document.getElementById('commentFormWrap').scrollIntoView({behavior:'smooth'});
+                document.getElementById('commentName').focus();
+            });
+        });
+
+        if (cancelReply) {
+            cancelReply.addEventListener('click', function () {
+                parentInput.value        = '';
+                replyingTo.style.display = 'none';
+            });
+        }
+
+        function showAlert(msg, type) {
+            alertBox.textContent   = msg;
+            alertBox.className     = 'comment-form__alert comment-form__alert--' + type;
+            alertBox.style.display = '';
+        }
+
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                submitBtn.disabled   = true;
+                submitBtn.textContent = 'Posting…';
+                alertBox.style.display = 'none';
+
+                var data = new FormData(form);
+
+                fetch('<?= SITE_URL ?>/api/comment_submit.php', {
+                    method : 'POST',
+                    body   : data,
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    if (res.success) {
+                        showAlert(res.message, 'success');
+                        form.reset();
+                        charCount.textContent    = '0';
+                        parentInput.value        = '';
+                        replyingTo.style.display = 'none';
+                    } else {
+                        showAlert(res.message || 'Something went wrong.', 'error');
+                    }
+                })
+                .catch(function () {
+                    showAlert('Network error. Please try again.', 'error');
+                })
+                .finally(function () {
+                    submitBtn.disabled    = false;
+                    submitBtn.textContent = 'Post Comment';
+                });
+            });
+        }
+    }());
+    </script>
 
     <!-- ===== RELATED NEWS ===== -->
     <?php if (!empty($relatedNews)): ?>
@@ -429,6 +649,13 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
             <?php endforeach; ?>
         </ul>
     </div>
+
+    <!-- Sidebar Ad -->
+    <?php if (!empty($adSidebar)): ?>
+    <div class="widget ad-slot ad-slot--sidebar" style="text-align:center;">
+        <?= $adSidebar ?>
+    </div>
+    <?php endif; ?>
 </aside>
 
 </div><!-- /.container .page-body -->

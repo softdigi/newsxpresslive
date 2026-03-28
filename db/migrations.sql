@@ -124,6 +124,44 @@ CREATE TABLE IF NOT EXISTS settings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
+-- Comments Table
+-- Supports threaded replies via parent_id.
+-- status: pending (awaiting moderation), approved, spam
+-- ============================================================
+CREATE TABLE IF NOT EXISTS comments (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    news_id     INT NOT NULL,
+    parent_id   INT DEFAULT NULL,
+    author_name VARCHAR(100) NOT NULL,
+    author_email VARCHAR(255) DEFAULT NULL,
+    content     TEXT NOT NULL,
+    status      ENUM('pending','approved','spam') DEFAULT 'pending',
+    ip_address  VARCHAR(64) DEFAULT NULL,   -- stores SHA-256 hash of IP
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_news_status (news_id, status),
+    INDEX idx_parent (parent_id),
+    CONSTRAINT fk_comment_news FOREIGN KEY (news_id) REFERENCES news(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- Comment Rate Limit Table (tracks submissions per IP hash)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS comment_rate_limit (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    ip_hash    VARCHAR(64) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_ip_time (ip_hash, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- Ad Settings — default rows (empty; admin pastes code via UI)
+-- ============================================================
+INSERT IGNORE INTO settings (setting_key, setting_value) VALUES
+    ('ad_header',     ''),
+    ('ad_in_content', ''),
+    ('ad_sidebar',    '');
+
+-- ============================================================
 -- Sample Tags (optional - for testing)
 -- ============================================================
 -- INSERT IGNORE INTO tags (name, slug) VALUES

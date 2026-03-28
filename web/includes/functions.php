@@ -346,3 +346,24 @@ function bookmarksUrl(): string
 {
     return SITE_URL . '/bookmarks/';
 }
+
+/**
+ * Fetch a single value from the settings table.
+ * Uses a static cache so multiple calls for the same key hit the DB only once.
+ */
+function getSetting(PDO $pdo, string $key, string $default = ''): string
+{
+    static $cache = [];
+    if (!array_key_exists($key, $cache)) {
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT setting_value FROM settings WHERE setting_key = ? LIMIT 1'
+            );
+            $stmt->execute([$key]);
+            $cache[$key] = (string)($stmt->fetchColumn() ?: '');
+        } catch (PDOException $e) {
+            $cache[$key] = '';
+        }
+    }
+    return $cache[$key] !== '' ? $cache[$key] : $default;
+}

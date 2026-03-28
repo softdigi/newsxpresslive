@@ -87,6 +87,10 @@ header('Content-Type: text/html; charset=UTF-8');
     <a href="/newsxpresslive_api/admin_panel/notifications/digest.php">🤖 AI Digest</a>
     <a href="/newsxpresslive_api/admin_panel/viral/index.php">🔥 Viral</a>
     <a href="/newsxpresslive_api/admin_panel/payouts/index.php">💰 Payouts</a>
+    <a href="/newsxpresslive_api/admin_panel/comments/index.php">💬 Comments</a>
+    <?php if (can(['admin','super_admin'])): ?>
+    <a href="/newsxpresslive_api/admin_panel/settings/ads.php">📢 Ad Manager</a>
+    <?php endif; ?>
     <a href="/newsxpresslive_api/admin_panel/logout.php">🚪 Logout</a>
 
   </nav>
