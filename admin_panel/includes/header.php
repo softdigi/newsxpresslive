@@ -84,6 +84,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <?php endif; ?>
 
     <div class="nav-section">System</div>
+    <a href="/newsxpresslive_api/admin_panel/notifications/digest.php">🤖 AI Digest</a>
     <a href="/newsxpresslive_api/admin_panel/viral/index.php">🔥 Viral</a>
     <a href="/newsxpresslive_api/admin_panel/payouts/index.php">💰 Payouts</a>
     <a href="/newsxpresslive_api/admin_panel/logout.php">🚪 Logout</a>

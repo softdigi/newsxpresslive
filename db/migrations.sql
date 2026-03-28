@@ -83,6 +83,47 @@ CREATE TABLE IF NOT EXISTS push_subscribers (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
+-- AI Digest: ai_summary column on news table
+-- ============================================================
+ALTER TABLE news ADD COLUMN IF NOT EXISTS ai_summary TEXT DEFAULT NULL;
+
+-- ============================================================
+-- AI News Digests Table
+-- Stores every digest that was generated and sent.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS news_digests (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    digest_type  ENUM('local_district','local_state','national','international') NOT NULL,
+    location_id  INT DEFAULT NULL,              -- district_id or state_id; NULL for national/international
+    digest_title VARCHAR(255) NOT NULL,
+    digest_text  TEXT NOT NULL,                 -- AI-generated summary sent as notification body
+    news_ids     TEXT,                          -- comma-separated news.id values included
+    sent_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+    fcm_response TEXT,                          -- raw FCM API response (for debugging)
+    INDEX idx_type_loc  (digest_type, location_id),
+    INDEX idx_type_time (digest_type, sent_at),
+    INDEX idx_sent_at   (sent_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- categories.scope column (national / international)
+-- Required by national_digest.php to split national vs intl.
+-- ============================================================
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS scope ENUM('national','international') DEFAULT 'national';
+
+-- ============================================================
+-- Settings table (for storing OpenAI / Gemini API keys)
+-- Already likely exists; included for completeness.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS settings (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    setting_key   VARCHAR(100) UNIQUE NOT NULL,
+    setting_value TEXT,
+    updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_key (setting_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
 -- Sample Tags (optional - for testing)
 -- ============================================================
 -- INSERT IGNORE INTO tags (name, slug) VALUES
