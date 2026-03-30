@@ -309,7 +309,11 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
              SECURITY NOTE: article body is stored as HTML (rich text editor output).
              In production, sanitize HTML at write-time with a library such as HTML Purifier
              before storing it in the database to prevent stored XSS. -->
-        <div class="article__body" itemprop="articleBody">
+        <div class="article__body" itemprop="articleBody"
+             data-lockable="true"
+             data-lock-percent="<?= ARTICLE_LOCK_PERCENT ?>"
+             data-play-store="<?= htmlspecialchars(PLAY_STORE_URL, ENT_QUOTES, 'UTF-8') ?>"
+             data-app-store="<?= htmlspecialchars(APP_STORE_URL,  ENT_QUOTES, 'UTF-8') ?>">
             <?= $news['content'] ?>
         </div>
 

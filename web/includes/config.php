@@ -24,6 +24,14 @@ define('SITE_NAME', 'NewsXpressLive');
 define('SITE_TAGLINE', 'Breaking News, Latest Updates');
 define('UPLOADS_URL', SITE_URL . '/uploads/news/');
 
+// App store deep-links (update when app is published)
+define('PLAY_STORE_URL', 'https://play.google.com/store/apps/details?id=com.newsxpresslive');
+define('APP_STORE_URL',  'https://apps.apple.com/app/newsxpresslive/id000000000');
+
+// Article content lock: percentage of article visible before paywall (0–100).
+// Set to 0 to disable locking.
+define('ARTICLE_LOCK_PERCENT', 60);
+
 $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET;
 
 $options = [

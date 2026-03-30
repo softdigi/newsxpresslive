@@ -2269,3 +2269,139 @@ body.dark .form-group__textarea {
     font-weight: 700;
     color: var(--color-text);
 }
+
+/* ── Article Content Lock / Paywall ─────────────────────────── */
+
+/* Wrapper that clips the visible portion of the article */
+.article__body-lock-wrap {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Gradient fade starting at the lock point */
+.article__body-lock-wrap::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 220px;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        var(--color-bg-white, #fff) 100%
+    );
+    pointer-events: none;
+}
+
+/* Paywall CTA card sits below the fade */
+.article-paywall {
+    margin: 0 auto 2rem;
+    max-width: 520px;
+    background: var(--color-bg-white, #fff);
+    border: 1.5px solid var(--color-border, #e5e5e5);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+    padding: 2rem 1.5rem;
+    text-align: center;
+}
+
+.article-paywall__icon {
+    font-size: 2.6rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.article-paywall__title {
+    font-family: var(--font-heading, sans-serif);
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--color-text, #111);
+    margin: 0 0 0.5rem;
+}
+
+.article-paywall__sub {
+    font-size: 0.95rem;
+    color: var(--color-gray, #666);
+    margin: 0 0 1.4rem;
+    line-height: 1.5;
+}
+
+.article-paywall__badges {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.4rem;
+}
+
+.article-paywall__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: var(--color-primary, #e53935);
+    color: #fff;
+    border-radius: 20px;
+    padding: 0.3rem 0.8rem;
+}
+
+.article-paywall__btns {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.article-paywall__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.6rem;
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.15s, box-shadow 0.15s;
+    width: 100%;
+    max-width: 280px;
+}
+
+.article-paywall__btn--android {
+    background: #1a73e8;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(26,115,232,0.25);
+}
+
+.article-paywall__btn--ios {
+    background: #111;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.20);
+}
+
+.article-paywall__btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+}
+
+.article-paywall__divider {
+    font-size: 0.78rem;
+    color: var(--color-gray, #999);
+    margin: 0.25rem 0;
+}
+
+/* Dark mode adjustments */
+body.dark-mode .article__body-lock-wrap::after {
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        var(--color-bg-dark, #121212) 100%
+    );
+}
+
+body.dark-mode .article-paywall {
+    background: var(--color-bg-dark2, #1e1e1e);
+    border-color: rgba(255,255,255,0.1);
+}

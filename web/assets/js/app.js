@@ -758,4 +758,92 @@
         };
     }
 
+    /* ── 20. Article Content Lock ──────────────────────────── */
+    // Locks article body at N% — shows a blurred fade + "Download App" CTA.
+    // The lock is data-driven from PHP so it can be toggled server-side.
+    // Flutter app never hits this page, so no lock is needed there.
+
+    (function articleContentLock() {
+        var body = document.querySelector('.article__body[data-lockable="true"]');
+        if (!body) return;
+
+        var lockPercent = parseInt(body.dataset.lockPercent, 10) || 60;
+        if (lockPercent <= 0 || lockPercent >= 100) return;
+
+        var playStoreUrl = body.dataset.playStore || '#';
+        var appStoreUrl  = body.dataset.appStore  || '#';
+
+        // Detect OS for smart default button order
+        var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+        // Wrap the body in a clipping container
+        var wrap = document.createElement('div');
+        wrap.className = 'article__body-lock-wrap';
+
+        // Clone body into wrap, keeping original reference for height calc
+        body.parentNode.insertBefore(wrap, body);
+        wrap.appendChild(body);
+
+        // After layout, compute the visible height cap
+        function applyLock() {
+            var totalH = body.scrollHeight;
+            var visH   = Math.floor(totalH * lockPercent / 100);
+            wrap.style.maxHeight = visH + 'px';
+        }
+
+        // Run after fonts / images have loaded for accurate height
+        if (document.readyState === 'complete') {
+            applyLock();
+        } else {
+            window.addEventListener('load', applyLock);
+        }
+
+        // Build paywall CTA card
+        var androidBtn = '<a href="' + escapeAttr(playStoreUrl) + '" ' +
+            'class="article-paywall__btn article-paywall__btn--android" ' +
+            'rel="noopener" target="_blank">' +
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+            '<path d="M3.18 23.76a1.5 1.5 0 0 0 2.07.57l10.02-5.78-2.38-2.38-9.71 7.59zm17.14-11.37a1.5 1.5 0 0 0 0-2.78l-2.3-1.33L15.14 12l2.88 2.88 2.3-1.49zM2.5 1.07A1.5 1.5 0 0 0 2 2.25v19.5a1.5 1.5 0 0 0 .5 1.18l.07.06L13.56 12v-.27L2.57 1.01 2.5 1.07zm10.64 11.37-2.4-2.4L1.82.71a1.5 1.5 0 0 1 1.79.35l11 6.35-1.47 5.03z"/>' +
+            '</svg>Get it on Google Play</a>';
+
+        var iosBtn = '<a href="' + escapeAttr(appStoreUrl) + '" ' +
+            'class="article-paywall__btn article-paywall__btn--ios" ' +
+            'rel="noopener" target="_blank">' +
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+            '<path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98l-.09.06c-.22.15-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04l-.08.27zm-6.18-15.5c.73-.89 1.94-1.56 2.94-1.6.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.01z"/>' +
+            '</svg>Download on App Store</a>';
+
+        var btnsHtml = isIOS
+            ? iosBtn + '<span class="article-paywall__divider">or</span>' + androidBtn
+            : androidBtn + '<span class="article-paywall__divider">or</span>' + iosBtn;
+
+        var paywall = document.createElement('div');
+        paywall.className = 'article-paywall';
+        paywall.setAttribute('role', 'complementary');
+        paywall.setAttribute('aria-label', 'Download app to continue reading');
+        paywall.innerHTML =
+            '<span class="article-paywall__icon" aria-hidden="true">📱</span>' +
+            '<h2 class="article-paywall__title">Continue Reading in the App</h2>' +
+            '<p class="article-paywall__sub">Get the full story — ad-free, faster, and offline ready.</p>' +
+            '<div class="article-paywall__badges">' +
+            '  <span class="article-paywall__badge">✔ Full Article</span>' +
+            '  <span class="article-paywall__badge">✔ No Ads</span>' +
+            '  <span class="article-paywall__badge">✔ Offline Mode</span>' +
+            '</div>' +
+            '<div class="article-paywall__btns">' + btnsHtml + '</div>';
+
+        // Insert paywall right after the lock-wrap
+        wrap.parentNode.insertBefore(paywall, wrap.nextSibling);
+    }());
+
+    // Minimal attribute-safe escape helper (used above)
+    function escapeAttr(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
 })();

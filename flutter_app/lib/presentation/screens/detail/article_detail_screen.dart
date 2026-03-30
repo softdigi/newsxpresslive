@@ -101,7 +101,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
 
   void _share() {
     if (_article == null) return;
-    final url = '${ApiEndpoints.baseUrl}/news/detail.php?slug=${_article!.slug}';
+    final url = '${ApiEndpoints.baseUrl}/news/detail.php?slug=${_article!.slug}&source=app';
     Share.share('${_article!.title}\n$url');
   }
 
