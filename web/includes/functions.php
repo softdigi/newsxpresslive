@@ -25,6 +25,14 @@ function newsUrl(string $slug): string
 }
 
 /**
+ * Build an absolute URL to the AMP version of an article.
+ */
+function ampUrl(string $slug): string
+{
+    return SITE_URL . '/news/amp.php?slug=' . urlencode($slug);
+}
+
+/**
  * Build an absolute URL to a category page using its slug.
  */
 function categoryUrl(string $slug): string

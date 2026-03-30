@@ -18,7 +18,7 @@ if ($slug === '') {
 /* ── Fetch the article ──────────────────────────────────────────────── */
 $stmt = $pdo->prepare(
     'SELECT n.id, n.title, n.slug, n.content, n.featured_image,
-            n.created_at, n.is_breaking,
+            n.created_at, n.updated_at, n.is_breaking,
             n.reporter_id, n.agency_id, n.category_id,
             n.views,
             c.name  AS category_name, c.slug AS category_slug,
