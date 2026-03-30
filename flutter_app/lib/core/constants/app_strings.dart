@@ -10,20 +10,21 @@ class AppStrings {
   static const String navSearch    = 'Search';
   static const String navBookmarks = 'Bookmarks';
   static const String navSettings  = 'Settings';
+  static const String navReporter  = 'Reporter';
 
   // ── Section titles ────────────────────────────────────────────────────
-  static const String breaking    = 'BREAKING';
-  static const String latestNews  = 'Latest News';
-  static const String relatedNews = 'Related News';
-  static const String comments    = 'Comments';
+  static const String breaking     = 'BREAKING';
+  static const String latestNews   = 'Latest News';
+  static const String relatedNews  = 'Related News';
+  static const String comments     = 'Comments';
   static const String leaveComment = 'Leave a Comment';
 
   // ── Buttons ───────────────────────────────────────────────────────────
-  static const String readMore   = 'Read More';
-  static const String share      = 'Share';
-  static const String bookmark   = 'Bookmark';
+  static const String readMore    = 'Read More';
+  static const String share       = 'Share';
+  static const String bookmark    = 'Bookmark';
   static const String postComment = 'Post Comment';
-  static const String retry      = 'Retry';
+  static const String retry       = 'Retry';
 
   // ── Placeholders / errors ─────────────────────────────────────────────
   static const String searchHint          = 'Search news...';
@@ -37,32 +38,78 @@ class AppStrings {
   static const String commentEmailHint    = 'Email (optional)';
 
   // ── Settings labels ───────────────────────────────────────────────────
-  static const String darkMode           = 'Dark Mode';
-  static const String notifications      = 'Notifications';
-  static const String language           = 'Language';
-  static const String about              = 'About';
-  static const String privacyPolicy      = 'Privacy Policy';
-  static const String version            = 'Version';
-  static const String appVersion         = '1.0.0';
+  static const String darkMode      = 'Dark Mode';
+  static const String notifications = 'Notifications';
+  static const String language      = 'Language';
+  static const String about         = 'About';
+  static const String privacyPolicy = 'Privacy Policy';
+  static const String version       = 'Version';
+  static const String appVersion    = '1.0.0';
 
   // ── Theme labels ──────────────────────────────────────────────────────
-  static const String themeLight         = 'Light';
-  static const String themeDark          = 'Dark';
-  static const String themeSystem        = 'Follow System';
+  static const String themeLight  = 'Light';
+  static const String themeDark   = 'Dark';
+  static const String themeSystem = 'Follow System';
 
   // ── Font size labels ──────────────────────────────────────────────────
-  static const String fontSizeSmall      = 'Small';
-  static const String fontSizeMedium     = 'Medium';
-  static const String fontSizeLarge      = 'Large';
+  static const String fontSizeSmall  = 'Small';
+  static const String fontSizeMedium = 'Medium';
+  static const String fontSizeLarge  = 'Large';
 
   // ── Bookmarks ─────────────────────────────────────────────────────────
-  static const String clearAllBookmarks  = 'Clear All';
-  static const String clearAllConfirm    = 'Remove all bookmarks?';
-  static const String clearAllBody       = 'This will permanently delete all your saved articles.';
-  static const String cancel             = 'Cancel';
-  static const String clear              = 'Clear';
+  static const String clearAllBookmarks = 'Clear All';
+  static const String clearAllConfirm   = 'Remove all bookmarks?';
+  static const String clearAllBody      = 'This will permanently delete all your saved articles.';
+  static const String cancel            = 'Cancel';
+  static const String clear             = 'Clear';
 
   // ── Search history ────────────────────────────────────────────────────
-  static const String recentSearches     = 'Recent Searches';
-  static const String clearHistory       = 'Clear';
+  static const String recentSearches = 'Recent Searches';
+  static const String clearHistory   = 'Clear';
+
+  // ── Auth ──────────────────────────────────────────────────────────────
+  static const String signInWithGoogle  = 'Continue with Google';
+  static const String continueAsGuest  = 'Continue as Guest';
+  static const String signOut           = 'Sign Out';
+  static const String signIn            = 'Sign In';
+  static const String signedInAs        = 'Signed in as';
+  static const String loginFailed       = 'Sign-in failed. Please try again.';
+  static const String account           = 'Account';
+  static const String guestUser         = 'Guest User';
+
+  // ── Onboarding ────────────────────────────────────────────────────────
+  static const String onboardingTitle         = 'Personalise Your Feed';
+  static const String onboardingSubtitle      = 'Help us show you the most relevant news';
+  static const String stepLocation            = 'Select Location';
+  static const String stepLanguages           = 'Choose Languages';
+  static const String stepInterests           = 'Pick Your Interests';
+  static const String selectCountry           = 'Select Country';
+  static const String selectState             = 'Select State';
+  static const String selectDistrict          = 'Select District (Optional)';
+  static const String primaryLanguage         = 'Primary Language';
+  static const String secondaryLanguages      = 'Secondary Languages (Optional)';
+  static const String pickCategories          = 'Pick at least one category';
+  static const String next                    = 'Next';
+  static const String skip                    = 'Skip';
+  static const String done                    = 'Done';
+  static const String saving                  = 'Saving…';
+
+  // ── Reporter Mode ─────────────────────────────────────────────────────
+  static const String submitNews        = 'Submit News';
+  static const String newsTitle         = 'News Title';
+  static const String newsDescription   = 'Description';
+  static const String selectCategory    = 'Select Category';
+  static const String selectLanguage    = 'Select Language';
+  static const String addPhoto          = 'Add Photo';
+  static const String changePhoto       = 'Change Photo';
+  static const String submitForReview   = 'Submit for Review';
+  static const String newsPending       = 'Your news has been submitted and is under review.';
+  static const String mySubmissions     = 'My Submissions';
+  static const String reportedBy        = 'Reported by';
+  static const String agency            = 'Agency';
+  static const String moreByReporter    = 'More by this Reporter';
+
+  // ── Offline / cache ───────────────────────────────────────────────────
+  static const String offlineBanner     = 'You\'re offline — showing cached content';
 }
+

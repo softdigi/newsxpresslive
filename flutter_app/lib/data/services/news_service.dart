@@ -118,5 +118,32 @@ class NewsService {
     return {'success': false, 'message': 'Unknown error'};
   }
 
+  // ── Reporter ──────────────────────────────────────────────────────────
+
+  /// Submit a reporter news story. Returns {success, news_id, status}.
+  Future<Map<String, dynamic>> submitNews({
+    required String firebaseUid,
+    required String title,
+    required String description,
+    required int    categoryId,
+    required int    languageId,
+    int?            countryId,
+    int?            stateId,
+    int?            districtId,
+  }) async {
+    final data = await _api.postJson(ApiEndpoints.submitNews, body: {
+      'firebase_uid': firebaseUid,
+      'title':        title,
+      'description':  description,
+      'category_id':  categoryId,
+      'language_id':  languageId,
+      if (countryId  != null) 'country_id':  countryId,
+      if (stateId    != null) 'state_id':    stateId,
+      if (districtId != null) 'district_id': districtId,
+    });
+    if (data is Map<String, dynamic>) return data;
+    return {'success': false, 'message': 'Unknown error'};
+  }
+
   void dispose() => _api.dispose();
 }

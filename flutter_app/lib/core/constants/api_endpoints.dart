@@ -42,4 +42,45 @@ class ApiEndpoints {
   // ── Newsletter ────────────────────────────────────────────────────────
   /// POST email
   static const String subscribe = '$baseUrl/api/subscribe.php';
+
+  // ── Auth & User ───────────────────────────────────────────────────────
+  /// POST firebase_uid, name → upsert user, returns user_id
+  static const String userLogin = '$baseUrl/api/user_login.php';
+
+  // ── Onboarding ────────────────────────────────────────────────────────
+  /// POST firebase_uid, country_id, [state_id], [district_id]
+  static const String saveLocation = '$baseUrl/api/save_location.php';
+
+  /// POST firebase_uid, languages: [{language_id, priority}]
+  static const String saveLanguages = '$baseUrl/api/save_languages.php';
+
+  /// POST firebase_uid, categories: [category_id, ...]
+  static const String saveInterests = '$baseUrl/api/save_interests.php';
+
+  // ── Geo ───────────────────────────────────────────────────────────────
+  /// GET → list of countries
+  static const String countries = '$baseUrl/geo/countries.php';
+
+  /// GET ?country_id=1 → states for a country
+  static const String states = '$baseUrl/geo/states.php';
+
+  /// GET ?state_id=1 → districts for a state
+  static const String districts = '$baseUrl/geo/districts.php';
+
+  /// GET → all supported languages
+  static const String languages = '$baseUrl/geo/languages.php';
+
+  // ── Reporter ──────────────────────────────────────────────────────────
+  /// POST (JSON) firebase_uid, title, description, category_id, language_id, ...
+  static const String submitNews = '$baseUrl/api/submit_news.php';
+
+  /// POST (multipart) news_id, image file
+  static const String uploadNewsImage = '$baseUrl/api/upload_news_image.php';
+
+  /// GET ?firebase_uid=xx → articles submitted by this reporter
+  static const String myNews = '$baseUrl/api/my_news.php';
+
+  // ── Feature Flags ─────────────────────────────────────────────────────
+  /// GET ?user_id=xx&platform=app → enabled feature flags
+  static const String featureFlags = '$baseUrl/api/v1/feature_flags.php';
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
@@ -8,12 +9,15 @@ import '../../../data/models/news_article.dart';
 import '../../../data/models/comment.dart';
 import '../../../data/services/api_service.dart';
 import '../../../data/services/news_service.dart';
+import '../../../data/services/analytics_service.dart';
 import '../../../providers/bookmark_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/api_endpoints.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/string_utils.dart';
+import '../../widgets/reporter_profile_card.dart';
+import '../../widgets/ad_banner_widget.dart';
 
 /// Full article detail screen.
 class ArticleDetailScreen extends StatefulWidget {
@@ -45,6 +49,8 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   void initState() {
     super.initState();
     _loadArticle();
+    // Track article open event
+    AnalyticsService.instance.logArticleOpen(0, widget.slug, null);
   }
 
   Future<void> _loadArticle() async {
@@ -52,7 +58,12 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     try {
       final art = await _api.getArticleDetail(widget.slug);
       _article = art;
-      if (art != null) _loadComments(art.id);
+      if (art != null) {
+        _loadComments(art.id);
+        // Update analytics with actual article data
+        AnalyticsService.instance
+            .logArticleOpen(art.id, art.slug, art.categoryName);
+      }
     } on ApiException catch (e) {
       _error = e.message;
     } catch (_) {
@@ -90,6 +101,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
         _nameCtrl.clear();
         _emailCtrl.clear();
         _contentCtrl.clear();
+        await AnalyticsService.instance.logCommentPost(_article!.id);
       }
     } on ApiException catch (e) {
       _commMsg = e.message;
@@ -101,8 +113,10 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
 
   void _share() {
     if (_article == null) return;
+    HapticFeedback.lightImpact();
     final url = '${ApiEndpoints.baseUrl}/news/detail.php?slug=${_article!.slug}&source=app';
     Share.share('${_article!.title}\n$url');
+    AnalyticsService.instance.logShareClick(_article!.id, _article!.slug);
   }
 
   @override
@@ -171,7 +185,17 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                         ? Icons.bookmark_rounded
                         : Icons.bookmark_border_rounded),
                     tooltip: AppStrings.bookmark,
-                    onPressed: () => bm.toggle(art),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      bm.toggle(art);
+                      if (saved) {
+                        AnalyticsService.instance
+                            .logBookmarkRemove(art.id, art.slug);
+                      } else {
+                        AnalyticsService.instance
+                            .logBookmarkAdd(art.id, art.slug);
+                      }
+                    },
                   );
                 },
               ),
@@ -232,6 +256,23 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                       ),
                     },
                   ),
+
+                  // Banner ad (after article body)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: AdBannerWidget(),
+                  ),
+
+                  // Reporter / Agency profile card
+                  if (art.reporterName != null &&
+                      art.reporterName!.isNotEmpty) ...[
+                    const Divider(height: 24),
+                    ReporterProfileCard(
+                      reporterName:  art.reporterName!,
+                      reporterPhoto: art.reporterPhoto,
+                      agencyName:    art.agencyName,
+                    ),
+                  ],
 
                   const Divider(height: 32),
 

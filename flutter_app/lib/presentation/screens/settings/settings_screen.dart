@@ -3,9 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/feature_flags_provider.dart';
+import '../../../data/services/feature_flags_service.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/api_endpoints.dart';
+import '../reporter/submit_news_screen.dart';
 
 /// Settings / preferences screen.
 class SettingsScreen extends StatelessWidget {
@@ -14,11 +18,37 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
+    final auth  = context.watch<AuthProvider>();
+    final flags = context.watch<FeatureFlagsProvider>();
 
     return Scaffold(
       appBar: AppBar(title: const Text(AppStrings.navSettings)),
       body: ListView(
         children: [
+          // ── Account ─────────────────────────────────────────────────
+          _section('Account'),
+          _AccountTile(auth: auth),
+
+          // ── Reporter Mode ────────────────────────────────────────────
+          if (flags.isEnabled(FeatureFlag.reporterMode)) ...[
+            const Divider(),
+            _section('Reporter'),
+            ListTile(
+              leading: const Icon(Icons.edit_note_rounded,
+                  color: AppColors.primary),
+              title: const Text(AppStrings.submitNews),
+              subtitle: const Text('Submit a news story for review'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const SubmitNewsScreen()),
+              ),
+            ),
+          ],
+
+          const Divider(),
+
           // ── Appearance ──────────────────────────────────────────────
           _section('Appearance'),
           _themeRadio(context, theme, ThemeMode.system,
@@ -70,7 +100,8 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Rate the App'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => launchUrl(
-              Uri.parse('https://play.google.com/store/apps/details?id=com.newsxpresslive'),
+              Uri.parse(
+                  'https://play.google.com/store/apps/details?id=com.newsxpresslive'),
               mode: LaunchMode.externalApplication,
             ),
           ),
@@ -163,6 +194,75 @@ class SettingsScreen extends StatelessWidget {
       applicationName: AppStrings.appName,
       applicationVersion: AppStrings.appVersion,
       applicationLegalese: '© 2026 NewsXpressLive. All rights reserved.',
+    );
+  }
+}
+
+// ── Account tile ──────────────────────────────────────────────────────────
+
+class _AccountTile extends StatelessWidget {
+  const _AccountTile({required this.auth});
+
+  final AuthProvider auth;
+
+  @override
+  Widget build(BuildContext context) {
+    final user   = auth.user;
+    final isGuest = auth.isGuest;
+
+    if (user == null || isGuest) {
+      return ListTile(
+        leading: const Icon(Icons.account_circle_outlined),
+        title: const Text(AppStrings.guestUser),
+        subtitle: const Text('Sign in for personalised news'),
+        trailing: TextButton(
+          onPressed: () => auth.signInWithGoogle(),
+          child: const Text(AppStrings.signIn,
+              style: TextStyle(color: AppColors.primary)),
+        ),
+      );
+    }
+
+    return ListTile(
+      leading: user.photoUrl != null
+          ? CircleAvatar(
+              backgroundImage: NetworkImage(user.photoUrl!),
+              radius: 18,
+            )
+          : const CircleAvatar(
+              radius: 18,
+              backgroundColor: AppColors.primary,
+              child: Icon(Icons.person, color: Colors.white, size: 18),
+            ),
+      title: Text(user.name ?? 'User',
+          style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: Text(user.email ?? user.firebaseUid,
+          style: const TextStyle(fontSize: 12)),
+      trailing: TextButton(
+        onPressed: () async {
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Sign Out'),
+              content: const Text('Are you sure you want to sign out?'),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text(AppStrings.cancel)),
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text(AppStrings.signOut,
+                        style: TextStyle(color: Colors.red))),
+              ],
+            ),
+          );
+          if (confirm == true && context.mounted) {
+            context.read<AuthProvider>().signOut();
+          }
+        },
+        child: const Text(AppStrings.signOut,
+            style: TextStyle(color: Colors.red)),
+      ),
     );
   }
 }

@@ -4,6 +4,7 @@ import '../data/models/news_article.dart';
 import '../data/models/category.dart';
 import '../data/services/news_service.dart';
 import '../data/services/api_service.dart';
+import '../data/services/cache_service.dart';
 
 enum LoadState { idle, loading, loaded, error }
 
@@ -111,11 +112,32 @@ class NewsProvider extends ChangeNotifier {
       } else {
         _articles.addAll(items);
         _currentPage++;
+        // Cache page-1 feed for offline use
+        if (_currentPage == 2) {
+          CacheService.instance.saveFeed(
+            _articles.map((a) => a.toJson()).toList(),
+          );
+        }
       }
       _loadState = LoadState.loaded;
     } on ApiException catch (e) {
-      _loadState = LoadState.error;
-      _errorMsg  = e.message;
+      // Try offline cache on first-page network failure
+      if (reset && _articles.isEmpty) {
+        final cached = CacheService.instance.getCachedFeed();
+        if (cached.isNotEmpty) {
+          _articles.addAll(
+            cached.map((j) => NewsArticle.fromJson(j)),
+          );
+          _hasMore   = false;
+          _loadState = LoadState.loaded;
+        } else {
+          _loadState = LoadState.error;
+          _errorMsg  = e.message;
+        }
+      } else {
+        _loadState = LoadState.error;
+        _errorMsg  = e.message;
+      }
     } catch (_) {
       _loadState = LoadState.error;
       _errorMsg  = 'Something went wrong. Please try again.';
