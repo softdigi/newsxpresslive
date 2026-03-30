@@ -10,6 +10,7 @@ import '../../../data/models/comment.dart';
 import '../../../data/services/api_service.dart';
 import '../../../data/services/news_service.dart';
 import '../../../data/services/analytics_service.dart';
+import '../../../data/services/realtime_service.dart';
 import '../../../providers/bookmark_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
@@ -31,12 +32,19 @@ class ArticleDetailScreen extends StatefulWidget {
 
 class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   final _api     = NewsService(api: ApiService());
+  final _rt      = RealtimeService();
   NewsArticle?   _article;
   bool           _loading   = true;
   String?        _error;
 
-  List<Comment>  _comments  = [];
-  bool           _commLoading = false;
+  // Comments (seeded from HTTP, then kept live via RTDB)
+  final List<Comment> _comments    = [];
+  bool                _commLoading = false;
+  // IDs already added — prevents HTTP + RTDB duplicates
+  final Set<int>      _commentIds  = {};
+
+  // Typing indicator
+  Set<String> _typers = {};
 
   // Comment form controllers
   final _nameCtrl    = TextEditingController();
@@ -51,6 +59,20 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     _loadArticle();
     // Track article open event
     AnalyticsService.instance.logArticleOpen(0, widget.slug, null);
+    // Report typing when user types in comment box
+    _contentCtrl.addListener(_onContentChanged);
+  }
+
+  void _onContentChanged() {
+    if (_article == null) return;
+    final name = _nameCtrl.text.trim();
+    if (_contentCtrl.text.isNotEmpty) {
+      _rt.reportTyping(
+        newsId:      _article!.id,
+        userId:      'user_${name.hashCode}',
+        displayName: name.isEmpty ? 'Someone' : name,
+      );
+    }
   }
 
   Future<void> _loadArticle() async {
@@ -59,7 +81,20 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
       final art = await _api.getArticleDetail(widget.slug);
       _article = art;
       if (art != null) {
-        _loadComments(art.id);
+        await _loadComments(art.id);
+        // Start real-time comment stream AFTER initial HTTP load
+        _rt.listenToComments(
+          newsId:    art.id,
+          onComment: _onRtComment,
+        );
+        // Start typing listener
+        _rt.listenToTyping(
+          newsId:  art.id,
+          userId:  'user_${art.id}',
+          onTypers: (typers) {
+            if (mounted) setState(() => _typers = typers);
+          },
+        );
         // Update analytics with actual article data
         AnalyticsService.instance
             .logArticleOpen(art.id, art.slug, art.categoryName);
@@ -72,10 +107,24 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     if (mounted) setState(() => _loading = false);
   }
 
+  /// Called for each comment pushed to RTDB (both on initial subscription
+  /// and whenever a new comment is approved by admin).
+  void _onRtComment(Comment comment) {
+    if (_commentIds.contains(comment.id)) return;
+    _commentIds.add(comment.id);
+    if (mounted) setState(() => _comments.add(comment));
+  }
+
   Future<void> _loadComments(int newsId) async {
     setState(() => _commLoading = true);
     try {
-      _comments = await _api.getComments(newsId);
+      final fetched = await _api.getComments(newsId);
+      for (final c in fetched) {
+        if (!_commentIds.contains(c.id)) {
+          _commentIds.add(c.id);
+          _comments.add(c);
+        }
+      }
     } catch (_) {}
     if (mounted) setState(() => _commLoading = false);
   }
@@ -89,6 +138,11 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
       return;
     }
     setState(() { _submitting = true; _commMsg = ''; });
+    // Clear typing indicator immediately on submit
+    _rt.clearTyping(
+      newsId: _article!.id,
+      userId: 'user_${name.hashCode}',
+    );
     try {
       final res = await _api.submitComment(
         newsId:      _article!.id,
@@ -121,6 +175,12 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
 
   @override
   void dispose() {
+    _contentCtrl.removeListener(_onContentChanged);
+    if (_article != null) {
+      _rt.stopListeningToComments(_article!.id);
+      _rt.stopListeningToTyping(_article!.id);
+    }
+    _rt.dispose();
     _nameCtrl.dispose();
     _emailCtrl.dispose();
     _contentCtrl.dispose();
@@ -291,6 +351,23 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                   else
                     ..._comments.map(_buildComment),
 
+                  // Typing indicator
+                  if (_typers.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, bottom: 8),
+                      child: Row(
+                        children: [
+                          const _TypingDots(),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${_typers.join(', ')} ${_typers.length == 1 ? 'is' : 'are'} typing…',
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+
                   const SizedBox(height: 24),
 
                   // Comment form
@@ -432,4 +509,62 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           style: const TextStyle(fontSize: 12, color: Colors.grey)),
     ],
   );
+}
+
+// ── Typing dots animation ─────────────────────────────────────────────────────
+
+class _TypingDots extends StatefulWidget {
+  const _TypingDots();
+
+  @override
+  State<_TypingDots> createState() => _TypingDotsState();
+}
+
+class _TypingDotsState extends State<_TypingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double>    _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync:    this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (i) {
+            final phase = (_anim.value + i / 3) % 1.0;
+            final opacity = (phase < 0.5 ? phase * 2 : (1 - phase) * 2)
+                .clamp(0.2, 1.0);
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 1),
+              child: Opacity(
+                opacity: opacity,
+                child: const CircleAvatar(
+                  radius:          3,
+                  backgroundColor: Colors.grey,
+                ),
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
 }

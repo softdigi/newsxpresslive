@@ -11,9 +11,12 @@ enum LoadState { idle, loading, loaded, error }
 
 /// Manages news feed state: categories, articles, pagination, search, trending.
 class NewsProvider extends ChangeNotifier {
-  NewsProvider() : _service = NewsService(api: ApiService());
+  NewsProvider()
+      : _service = NewsService(api: ApiService()),
+        _rt      = RealtimeService();
 
-  final NewsService _service;
+  final NewsService   _service;
+  final RealtimeService _rt;
   bool _initialized = false;
 
   // ── Categories ────────────────────────────────────────────────────────
@@ -68,6 +71,8 @@ class NewsProvider extends ChangeNotifier {
       loadBreaking(),
       loadTrending(),
     ]);
+    // Start real-time breaking-news listener after initial HTTP load
+    _rt.listenToBreaking(onBreaking: _onRtdbBreaking);
   }
 
   // ── Categories ────────────────────────────────────────────────────────
@@ -148,6 +153,7 @@ class NewsProvider extends ChangeNotifier {
 
   Future<void> refresh() async {
     _initialized = false;
+    _rt.stopListeningToBreaking();
     await init();
   }
 
@@ -175,6 +181,17 @@ class NewsProvider extends ChangeNotifier {
       _breaking = await _service.getLatestBreaking();
       notifyListeners();
     } catch (_) {}
+  }
+
+  /// Called by the RTDB listener whenever admin marks a new breaking article.
+  void _onRtdbBreaking(NewsArticle article) {
+    _breaking = article;
+    // Prepend to feed if not already present
+    if (_articles.isNotEmpty &&
+        !_articles.any((a) => a.id == article.id)) {
+      _articles.insert(0, article);
+    }
+    notifyListeners();
   }
 
   // ── Search ────────────────────────────────────────────────────────────
@@ -226,6 +243,7 @@ class NewsProvider extends ChangeNotifier {
   @override
   void dispose() {
     _searchDebounce?.cancel();
+    _rt.dispose();
     _service.dispose();
     super.dispose();
   }
