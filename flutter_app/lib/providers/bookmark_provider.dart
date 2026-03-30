@@ -15,6 +15,7 @@ class BookmarkProvider extends ChangeNotifier {
   final List<NewsArticle>       _bookmarks = [];
 
   List<NewsArticle> get bookmarks => List.unmodifiable(_bookmarks);
+  int               get count     => _bookmarks.length;
 
   bool isBookmarked(int newsId) => _bookmarks.any((a) => a.id == newsId);
 
@@ -32,6 +33,12 @@ class BookmarkProvider extends ChangeNotifier {
 
   Future<void> remove(int newsId) async {
     _bookmarks.removeWhere((a) => a.id == newsId);
+    notifyListeners();
+    await _save();
+  }
+
+  Future<void> clearAll() async {
+    _bookmarks.clear();
     notifyListeners();
     await _save();
   }

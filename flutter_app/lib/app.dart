@@ -33,7 +33,17 @@ class NewsXpressApp extends StatelessWidget {
           theme:                      AppTheme.light,
           darkTheme:                  AppTheme.dark,
           themeMode:                  theme.themeMode,
-          home:                       child,
+          // Override text scale factor app-wide based on user preference
+          builder: (context, widget) {
+            final scale = theme.fontScale;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: widget!,
+            );
+          },
+          home: child,
         ),
         child: MainNavigation(key: mainNavKey),
       ),

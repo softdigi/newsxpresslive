@@ -44,4 +44,25 @@ class AppStrings {
   static const String privacyPolicy      = 'Privacy Policy';
   static const String version            = 'Version';
   static const String appVersion         = '1.0.0';
+
+  // ── Theme labels ──────────────────────────────────────────────────────
+  static const String themeLight         = 'Light';
+  static const String themeDark          = 'Dark';
+  static const String themeSystem        = 'Follow System';
+
+  // ── Font size labels ──────────────────────────────────────────────────
+  static const String fontSizeSmall      = 'Small';
+  static const String fontSizeMedium     = 'Medium';
+  static const String fontSizeLarge      = 'Large';
+
+  // ── Bookmarks ─────────────────────────────────────────────────────────
+  static const String clearAllBookmarks  = 'Clear All';
+  static const String clearAllConfirm    = 'Remove all bookmarks?';
+  static const String clearAllBody       = 'This will permanently delete all your saved articles.';
+  static const String cancel             = 'Cancel';
+  static const String clear              = 'Clear';
+
+  // ── Search history ────────────────────────────────────────────────────
+  static const String recentSearches     = 'Recent Searches';
+  static const String clearHistory       = 'Clear';
 }

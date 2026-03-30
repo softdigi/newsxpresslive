@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../data/models/news_article.dart';
 import '../data/models/category.dart';
@@ -48,6 +49,7 @@ class NewsProvider extends ChangeNotifier {
   final List<NewsArticle> _searchResults = [];
   LoadState               _searchState   = LoadState.idle;
   String                  _lastQuery     = '';
+  Timer?                  _searchDebounce;
 
   List<NewsArticle> get searchResults => _searchResults;
   LoadState         get searchState   => _searchState;
@@ -155,34 +157,43 @@ class NewsProvider extends ChangeNotifier {
   // ── Search ────────────────────────────────────────────────────────────
 
   Future<void> searchNews(String query) async {
+    _searchDebounce?.cancel();
+
     if (query.trim().isEmpty) {
       _searchResults.clear();
       _searchState = LoadState.idle;
+      _lastQuery   = '';
       notifyListeners();
       return;
     }
-    if (query == _lastQuery && _searchState == LoadState.loaded) return;
-    _lastQuery   = query;
+
+    // Show loading state immediately for visual feedback
     _searchState = LoadState.loading;
     notifyListeners();
 
-    try {
-      final results = await _service.search(query);
-      _searchResults
-        ..clear()
-        ..addAll(results);
-      _searchState = LoadState.loaded;
-    } on ApiException catch (e) {
-      _searchState = LoadState.error;
-      _errorMsg    = e.message;
-    } catch (_) {
-      _searchState = LoadState.error;
-      _errorMsg    = 'Search failed. Please try again.';
-    }
-    notifyListeners();
+    _searchDebounce = Timer(const Duration(milliseconds: 400), () async {
+      if (query == _lastQuery && _searchState == LoadState.loaded) return;
+      _lastQuery = query;
+
+      try {
+        final results = await _service.search(query);
+        _searchResults
+          ..clear()
+          ..addAll(results);
+        _searchState = LoadState.loaded;
+      } on ApiException catch (e) {
+        _searchState = LoadState.error;
+        _errorMsg    = e.message;
+      } catch (_) {
+        _searchState = LoadState.error;
+        _errorMsg    = 'Search failed. Please try again.';
+      }
+      notifyListeners();
+    });
   }
 
   void clearSearch() {
+    _searchDebounce?.cancel();
     _searchResults.clear();
     _searchState = LoadState.idle;
     _lastQuery   = '';
@@ -191,6 +202,7 @@ class NewsProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _service.dispose();
     super.dispose();
   }

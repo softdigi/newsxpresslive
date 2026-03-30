@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../providers/news_provider.dart';
 import '../../widgets/news_card.dart';
 import '../detail/article_detail_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 
-/// Search screen with debounced query input and results list.
+/// Search screen with debounced query input, recent search history,
+/// and a results list.
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -15,8 +17,20 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final _ctrl = TextEditingController();
+  static const String _historyKey = 'search_history';
+  static const int    _maxHistory = 8;
+
+  final _ctrl      = TextEditingController();
   final _focusNode = FocusNode();
+
+  List<String> _history = [];
+  SharedPreferences? _prefs;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
 
   @override
   void dispose() {
@@ -25,12 +39,64 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
+  // ── History persistence ───────────────────────────────────────────────
+
+  Future<void> _loadHistory() async {
+    _prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _history = _prefs!.getStringList(_historyKey) ?? [];
+    });
+  }
+
+  Future<void> _addToHistory(String query) async {
+    final q = query.trim();
+    if (q.isEmpty) return;
+    _history
+      ..remove(q)
+      ..insert(0, q);
+    if (_history.length > _maxHistory) _history = _history.sublist(0, _maxHistory);
+    await _prefs?.setStringList(_historyKey, _history);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _clearHistory() async {
+    await _prefs?.remove(_historyKey);
+    if (mounted) setState(() => _history.clear());
+  }
+
+  Future<void> _removeHistoryItem(String q) async {
+    _history.remove(q);
+    await _prefs?.setStringList(_historyKey, _history);
+    if (mounted) setState(() {});
+  }
+
+  // ── Navigation ────────────────────────────────────────────────────────
+
   void _openArticle(String slug) {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => ArticleDetailScreen(slug: slug)),
     );
   }
+
+  void _submitSearch(String query) {
+    final q = query.trim();
+    if (q.isEmpty) return;
+    _addToHistory(q);
+    context.read<NewsProvider>().searchNews(q);
+    _focusNode.unfocus();
+  }
+
+  void _pickHistory(String q) {
+    _ctrl.text = q;
+    _ctrl.selection = TextSelection.fromPosition(
+      TextPosition(offset: q.length),
+    );
+    _submitSearch(q);
+  }
+
+  // ── Build ─────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -44,8 +110,8 @@ class _SearchScreenState extends State<SearchScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: TextField(
             controller: _ctrl,
-            focusNode: _focusNode,
-            autofocus: true,
+            focusNode:  _focusNode,
+            autofocus:  true,
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
               hintText: AppStrings.searchHint,
@@ -56,6 +122,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       onPressed: () {
                         _ctrl.clear();
                         prov.clearSearch();
+                        setState(() {});
                       },
                     )
                   : null,
@@ -67,17 +134,17 @@ class _SearchScreenState extends State<SearchScreen> {
               contentPadding: const EdgeInsets.symmetric(vertical: 0),
             ),
             onChanged: (q) {
-              setState(() {}); // update suffix icon
+              setState(() {}); // rebuild suffix icon
               prov.searchNews(q);
             },
-            onSubmitted: prov.searchNews,
+            onSubmitted: _submitSearch,
           ),
         ),
       ),
       body: Consumer<NewsProvider>(
         builder: (context, prov, _) {
           if (prov.searchState == LoadState.idle) {
-            return const _SearchHint();
+            return _buildIdleView(context);
           }
           if (prov.searchState == LoadState.loading) {
             return const Center(
@@ -111,14 +178,72 @@ class _SearchScreenState extends State<SearchScreen> {
             itemBuilder: (context, i) {
               final article = prov.searchResults[i];
               return NewsCard(
-                article:  article,
-                onTap:    () => _openArticle(article.slug),
-                compact:  true,
+                article: article,
+                onTap:   () {
+                  _addToHistory(_ctrl.text.trim());
+                  _openArticle(article.slug);
+                },
+                compact: true,
               );
             },
           );
         },
       ),
+    );
+  }
+
+  // ── Idle view: recent searches ────────────────────────────────────────
+
+  Widget _buildIdleView(BuildContext context) {
+    final theme = Theme.of(context);
+    if (_history.isEmpty) return const _SearchHint();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 8, 4),
+          child: Row(
+            children: [
+              Text(AppStrings.recentSearches,
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700)),
+              const Spacer(),
+              TextButton(
+                onPressed: _clearHistory,
+                style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4)),
+                child: const Text(AppStrings.clearHistory,
+                    style: TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            itemCount: _history.length,
+            itemBuilder: (context, i) {
+              final q = _history[i];
+              return ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                leading: const Icon(Icons.history_rounded,
+                    color: Colors.grey, size: 20),
+                title: Text(q, style: theme.textTheme.bodyMedium),
+                trailing: IconButton(
+                  icon: const Icon(Icons.close, size: 16, color: Colors.grey),
+                  onPressed: () => _removeHistoryItem(q),
+                  tooltip: 'Remove',
+                ),
+                onTap: () => _pickHistory(q),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
