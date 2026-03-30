@@ -5,6 +5,7 @@ import '../data/models/category.dart';
 import '../data/services/news_service.dart';
 import '../data/services/api_service.dart';
 import '../data/services/cache_service.dart';
+import '../data/services/realtime_service.dart';
 
 enum LoadState { idle, loading, loaded, error }
 
