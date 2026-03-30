@@ -6,11 +6,12 @@ import '../data/services/api_service.dart';
 
 enum LoadState { idle, loading, loaded, error }
 
-/// Manages news feed state: categories, articles, pagination, search.
+/// Manages news feed state: categories, articles, pagination, search, trending.
 class NewsProvider extends ChangeNotifier {
   NewsProvider() : _service = NewsService(api: ApiService());
 
   final NewsService _service;
+  bool _initialized = false;
 
   // ── Categories ────────────────────────────────────────────────────────
   List<Category> _categories    = [];
@@ -32,6 +33,13 @@ class NewsProvider extends ChangeNotifier {
   bool              get hasMore   => _hasMore;
   bool              get isLoading => _loadState == LoadState.loading;
 
+  // ── Trending news ─────────────────────────────────────────────────────
+  final List<NewsArticle> _trending      = [];
+  LoadState               _trendingState = LoadState.idle;
+
+  List<NewsArticle> get trending      => _trending;
+  LoadState         get trendingState => _trendingState;
+
   // ── Breaking news ─────────────────────────────────────────────────────
   NewsArticle? _breaking;
   NewsArticle? get breaking => _breaking;
@@ -46,8 +54,16 @@ class NewsProvider extends ChangeNotifier {
 
   // ── Init ──────────────────────────────────────────────────────────────
 
+  /// Call once from HomeScreen. Guards against re-loading on tab revisit.
   Future<void> init() async {
-    await Future.wait([loadCategories(), loadNewsFeed(reset: true), loadBreaking()]);
+    if (_initialized) return;
+    _initialized = true;
+    await Future.wait([
+      loadCategories(),
+      loadNewsFeed(reset: true),
+      loadBreaking(),
+      loadTrending(),
+    ]);
   }
 
   // ── Categories ────────────────────────────────────────────────────────
@@ -98,14 +114,34 @@ class NewsProvider extends ChangeNotifier {
     } on ApiException catch (e) {
       _loadState = LoadState.error;
       _errorMsg  = e.message;
-    } catch (e) {
+    } catch (_) {
       _loadState = LoadState.error;
       _errorMsg  = 'Something went wrong. Please try again.';
     }
     notifyListeners();
   }
 
-  Future<void> refresh() => loadNewsFeed(reset: true);
+  Future<void> refresh() async {
+    _initialized = false;
+    await init();
+  }
+
+  // ── Trending ──────────────────────────────────────────────────────────
+
+  Future<void> loadTrending() async {
+    _trendingState = LoadState.loading;
+    notifyListeners();
+    try {
+      final items = await _service.getTrending(limit: 6);
+      _trending
+        ..clear()
+        ..addAll(items);
+      _trendingState = LoadState.loaded;
+    } catch (_) {
+      _trendingState = LoadState.error;
+    }
+    notifyListeners();
+  }
 
   // ── Breaking news ─────────────────────────────────────────────────────
 
@@ -155,7 +191,8 @@ class NewsProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _service._api.dispose();
+    _service.dispose();
     super.dispose();
   }
 }
+

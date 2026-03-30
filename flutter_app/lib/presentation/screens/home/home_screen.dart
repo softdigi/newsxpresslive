@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/news_provider.dart';
-import '../../providers/bookmark_provider.dart';
 import '../widgets/news_card.dart';
 import '../widgets/breaking_ticker.dart';
 import '../widgets/category_chip.dart';
+import 'home/widgets/shimmer_news_grid.dart';
+import 'home/widgets/featured_news_card.dart';
+import 'home/widgets/trending_section.dart';
+import 'home/widgets/section_header.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 import '../screens/detail/article_detail_screen.dart';
+import '../../main_navigation.dart';
 
-/// Home screen: breaking ticker, category chips, paginated news feed.
+/// Home screen: SliverAppBar, breaking ticker, category chips,
+/// featured hero card, trending strip, paginated 2-col grid.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -31,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onScroll() {
     if (_scroll.position.pixels >=
-        _scroll.position.maxScrollExtent - 200) {
+        _scroll.position.maxScrollExtent - 250) {
       final prov = context.read<NewsProvider>();
       if (!prov.isLoading && prov.hasMore) {
         prov.loadNewsFeed();
@@ -45,126 +50,142 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  void _openArticle(BuildContext context, String slug) {
+  void _openArticle(String slug) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => ArticleDetailScreen(slug: slug),
-      ),
+      MaterialPageRoute(builder: (_) => ArticleDetailScreen(slug: slug)),
     );
   }
+
+  void _goToSearch() => mainNavKey.currentState?.switchTab(1);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          AppStrings.appName,
-          style: TextStyle(
-            color: AppColors.primary,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.5,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search_rounded),
-            tooltip: 'Search',
-            onPressed: () => DefaultTabController.of(context),
-          ),
-        ],
-      ),
       body: Consumer<NewsProvider>(
         builder: (context, prov, _) {
           return RefreshIndicator(
-            color: AppColors.primary,
+            color:    AppColors.primary,
             onRefresh: prov.refresh,
             child: CustomScrollView(
               controller: _scroll,
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                // Breaking ticker
+                // ── SliverAppBar ─────────────────────────────────────────
+                _buildAppBar(context),
+
+                // ── Breaking ticker ───────────────────────────────────────
                 if (prov.breaking != null)
                   SliverToBoxAdapter(
                     child: BreakingTicker(
                       article: prov.breaking!,
-                      onTap: () =>
-                          _openArticle(context, prov.breaking!.slug),
+                      onTap:   () => _openArticle(prov.breaking!.slug),
                     ),
                   ),
 
-                const SliverToBoxAdapter(child: SizedBox(height: 12)),
-
-                // Category chips
+                // ── Category chips ────────────────────────────────────────
                 if (prov.categories.isNotEmpty)
                   SliverToBoxAdapter(
-                    child: CategoryChips(
-                      categories: prov.categories,
-                      selected:   prov.selectedCat,
-                      onSelect:   prov.selectCategory,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 14, bottom: 4),
+                      child: CategoryChips(
+                        categories: prov.categories,
+                        selected:   prov.selectedCat,
+                        onSelect:   prov.selectCategory,
+                      ),
                     ),
                   ),
 
-                const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                // ── Featured article (first item) ─────────────────────────
+                if (prov.loadState == LoadState.loading && prov.articles.isEmpty)
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 16),
+                      child: ShimmerFeaturedCard(),
+                    ),
+                  )
+                else if (prov.articles.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: FeaturedNewsCard(
+                        article: prov.articles.first,
+                        onTap:   () => _openArticle(prov.articles.first.slug),
+                      ),
+                    ),
+                  ),
 
-                // Section title
+                // ── Trending section ──────────────────────────────────────
+                if (prov.trending.isNotEmpty) ...[
+                  const SliverToBoxAdapter(child: SizedBox(height: 20)),
+                  SliverToBoxAdapter(
+                    child: SectionHeader(title: '🔥 Trending'),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 10)),
+                  SliverToBoxAdapter(
+                    child: TrendingSection(
+                      articles:      prov.trending,
+                      onArticleTap:  (a) => _openArticle(a.slug),
+                    ),
+                  ),
+                ],
+
+                // ── Latest News section ───────────────────────────────────
+                const SliverToBoxAdapter(child: SizedBox(height: 20)),
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      AppStrings.latestNews,
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                  ),
+                  child: SectionHeader(title: AppStrings.latestNews),
                 ),
-
                 const SliverToBoxAdapter(child: SizedBox(height: 10)),
 
-                // Error state
-                if (prov.loadState == LoadState.error &&
-                    prov.articles.isEmpty)
-                  SliverFillRemaining(
-                    child: _errorView(context, prov),
-                  )
+                // ── Error (empty state) ───────────────────────────────────
+                if (prov.loadState == LoadState.error && prov.articles.isEmpty)
+                  SliverFillRemaining(child: _errorView(prov)),
 
-                // News grid
+                // ── Shimmer skeleton (first load) ─────────────────────────
+                else if (prov.loadState == LoadState.loading &&
+                    prov.articles.isEmpty)
+                  const SliverToBoxAdapter(child: ShimmerNewsGrid()),
+
+                // ── News grid (skip first item — shown as featured) ───────
                 else
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     sliver: SliverGrid(
                       gridDelegate:
                       const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount:     2,
-                        mainAxisSpacing:    10,
-                        crossAxisSpacing:   10,
-                        childAspectRatio:   0.72,
+                        crossAxisCount:   2,
+                        mainAxisSpacing:  10,
+                        crossAxisSpacing: 10,
+                        childAspectRatio: 0.72,
                       ),
                       delegate: SliverChildBuilderDelegate(
                         (context, i) {
-                          final article = prov.articles[i];
+                          // Skip index 0 — it's the featured card above
+                          final article = prov.articles[i + 1];
                           return NewsCard(
                             article: article,
-                            onTap:   () => _openArticle(context, article.slug),
+                            onTap:   () => _openArticle(article.slug),
                           );
                         },
-                        childCount: prov.articles.length,
+                        childCount: (prov.articles.length - 1)
+                            .clamp(0, prov.articles.length),
                       ),
                     ),
                   ),
 
-                // Load more / End indicator
+                // ── Load-more indicator ───────────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: prov.isLoading
+                    padding: const EdgeInsets.all(20),
+                    child: prov.isLoading && prov.articles.isNotEmpty
                         ? const Center(
                             child: CircularProgressIndicator(
-                                color: AppColors.primary))
-                        : !prov.hasMore
-                            ? const Center(
-                                child: Text('You\'ve reached the end',
+                                color: AppColors.primary, strokeWidth: 2))
+                        : !prov.hasMore && prov.articles.isNotEmpty
+                            ? Center(
+                                child: Text('— You\'ve reached the end —',
                                     style: TextStyle(
-                                        color: Colors.grey,
+                                        color: Colors.grey.shade400,
                                         fontSize: 12)))
                             : const SizedBox.shrink(),
                   ),
@@ -177,24 +198,78 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _errorView(BuildContext context, NewsProvider prov) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+  // ── SliverAppBar ─────────────────────────────────────────────────────
+
+  Widget _buildAppBar(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return SliverAppBar(
+      floating:   true,
+      snap:       true,
+      elevation:  0,
+      backgroundColor: isDark
+          ? AppColors.scaffoldDark
+          : Colors.white,
+      title: Row(
         children: [
-          const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.grey),
-          const SizedBox(height: 12),
-          Text(prov.errorMsg.isNotEmpty
-              ? prov.errorMsg
-              : AppStrings.loadingFailed),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () => prov.refresh(),
-            icon:  const Icon(Icons.refresh),
-            label: const Text(AppStrings.retry),
+          // Logo dot
+          Container(
+            width: 10, height: 10,
+            decoration: const BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          const Text(
+            AppStrings.appName,
+            style: TextStyle(
+              color:       AppColors.primary,
+              fontWeight:  FontWeight.w900,
+              fontSize:    20,
+              letterSpacing: -0.5,
+            ),
           ),
         ],
+      ),
+      actions: [
+        IconButton(
+          icon:    const Icon(Icons.search_rounded),
+          tooltip: AppStrings.navSearch,
+          onPressed: _goToSearch,
+        ),
+        const SizedBox(width: 4),
+      ],
+    );
+  }
+
+  // ── Error view ───────────────────────────────────────────────────────
+
+  Widget _errorView(NewsProvider prov) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.wifi_off_rounded, size: 52, color: Colors.grey),
+            const SizedBox(height: 12),
+            Text(
+              prov.errorMsg.isNotEmpty
+                  ? prov.errorMsg
+                  : AppStrings.loadingFailed,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: prov.refresh,
+              icon:  const Icon(Icons.refresh_rounded),
+              label: const Text(AppStrings.retry),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
+

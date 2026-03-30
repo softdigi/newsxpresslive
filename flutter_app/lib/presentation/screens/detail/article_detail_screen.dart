@@ -110,7 +110,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
     _contentCtrl.dispose();
-    _api._api.dispose();
+    _api.dispose();
     super.dispose();
   }
 

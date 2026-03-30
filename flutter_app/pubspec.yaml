@@ -40,6 +40,9 @@ dependencies:
   # Google Fonts
   google_fonts: ^6.2.1
 
+  # Shimmer skeleton loading
+  shimmer: ^3.0.0
+
   # Icons
   cupertino_icons: ^1.0.8
 

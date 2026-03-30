@@ -50,6 +50,18 @@ class NewsService {
     return NewsArticle.fromJson(data as Map<String, dynamic>);
   }
 
+  // ── Trending news ─────────────────────────────────────────────────────
+
+  /// Fetch top-viewed articles from the last 7 days.
+  Future<List<NewsArticle>> getTrending({int limit = 5}) async {
+    final data = await _api.get(
+      ApiEndpoints.trending,
+      queryParams: {'limit': limit.toString()},
+    );
+    if (data is! List) return [];
+    return data.map((e) => NewsArticle.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
   // ── Search ────────────────────────────────────────────────────────────
 
   /// Search articles by keyword.
@@ -105,4 +117,6 @@ class NewsService {
     if (data is Map<String, dynamic>) return data;
     return {'success': false, 'message': 'Unknown error'};
   }
+
+  void dispose() => _api.dispose();
 }

@@ -25,6 +25,9 @@ class ApiEndpoints {
   /// GET  ?q=keyword&page=1 → search results
   static const String search = '$baseUrl/api/search.php';
 
+  /// GET  ?limit=5 → top-viewed articles (last 7 days)
+  static const String trending = '$baseUrl/api/trending.php';
+
   // ── Categories ────────────────────────────────────────────────────────
   /// GET → all categories list
   static const String categories = '$baseUrl/api/categories.php';

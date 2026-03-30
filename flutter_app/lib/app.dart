@@ -15,7 +15,7 @@ class NewsXpressApp extends StatelessWidget {
     required this.bookmarkProvider,
   });
 
-  final ThemeProvider   themeProvider;
+  final ThemeProvider    themeProvider;
   final BookmarkProvider bookmarkProvider;
 
   @override
@@ -28,15 +28,16 @@ class NewsXpressApp extends StatelessWidget {
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, theme, child) => MaterialApp(
-          title:         AppStrings.appName,
+          title:                      AppStrings.appName,
           debugShowCheckedModeBanner: false,
-          theme:         AppTheme.light,
-          darkTheme:     AppTheme.dark,
-          themeMode:     theme.themeMode,
-          home:          child,
+          theme:                      AppTheme.light,
+          darkTheme:                  AppTheme.dark,
+          themeMode:                  theme.themeMode,
+          home:                       child,
         ),
-        child: const MainNavigation(),
+        child: MainNavigation(key: mainNavKey),
       ),
     );
   }
 }
+
