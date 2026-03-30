@@ -58,6 +58,7 @@ try {
             n.slug,
             n.description,
             n.image,
+            n.image_sizes,
             n.status,
             n.is_breaking,
             n.is_featured,
@@ -96,6 +97,21 @@ try {
         $item['is_featured']      = (int)$item['is_featured'];
         $item['is_boosted']       = (int)$item['is_boosted'];
         $item['views']            = (int)$item['views'];
+
+        // Decode image_sizes JSON; fall back to image column for legacy articles
+        if (!empty($item['image_sizes'])) {
+            $item['image_sizes'] = json_decode($item['image_sizes'], true) ?: null;
+        }
+        if (empty($item['image_sizes']) && !empty($item['image'])) {
+            // Legacy article — expose the single image as all three sizes
+            $item['image_sizes'] = [
+                'thumbnail' => $item['image'],
+                'medium'    => $item['image'],
+                'original'  => $item['image'],
+            ];
+        }
+        // Lazy-load hint: always true when image_sizes is present
+        $item['lazy_load'] = !empty($item['image_sizes']);
     }
     unset($item);
 

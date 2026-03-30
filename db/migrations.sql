@@ -154,6 +154,14 @@ CREATE TABLE IF NOT EXISTS comment_rate_limit (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
+-- Media Optimization: image_sizes JSON column
+-- Stores thumbnail / medium / original WebP URLs as JSON object.
+-- e.g. {"thumbnail":"https://cdn.../thumb/img.webp","medium":"...","original":"..."}
+-- image column kept for backward compatibility (holds medium URL after migration).
+-- ============================================================
+ALTER TABLE news ADD COLUMN IF NOT EXISTS image_sizes JSON DEFAULT NULL;
+
+-- ============================================================
 -- Ad Settings — default rows (empty; admin pastes code via UI)
 -- ============================================================
 INSERT IGNORE INTO settings (setting_key, setting_value) VALUES

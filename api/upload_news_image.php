@@ -3,7 +3,7 @@ header("Content-Type: application/json");
 
 require __DIR__ . "/../geo/config.php";
 require __DIR__ . "/../geo/response.php";
-require __DIR__ . "/../helpers/upload.php";
+require __DIR__ . "/../helpers/media.php";
 
 /* POST only */
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -26,19 +26,28 @@ if (!$news) {
     jsonResponse(false, [], "news not found");
 }
 
-/* Upload */
-$result = uploadImage($_FILES['image'], 'news/images');
+/* Process image: convert to WebP, generate 3 sizes, apply CDN URLs */
+$result = processUploadedImage($_FILES['image'], 'news/images');
 
 if (isset($result['error'])) {
     jsonResponse(false, [], $result['error']);
 }
 
-/* Save image path */
+/* Persist:
+ *   image       — medium URL (backward compat; existing code reads this column)
+ *   image_sizes — JSON object with thumbnail / medium / original URLs
+ */
 $stmt = $pdo->prepare(
-    "UPDATE news SET image=? WHERE id=?"
+    "UPDATE news SET image = ?, image_sizes = ? WHERE id = ?"
 );
-$stmt->execute([$result['url'], $newsId]);
+$stmt->execute([
+    $result['primary_url'],
+    json_encode($result['image_sizes']),
+    $newsId,
+]);
 
 jsonResponse(true, [
-    "image_url" => $result['url']
+    "image_url"   => $result['primary_url'],
+    "image_sizes" => $result['image_sizes'],
+    "lazy_load"   => true,
 ], "image uploaded successfully");
