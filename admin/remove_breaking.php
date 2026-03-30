@@ -2,8 +2,9 @@
 header("Content-Type: application/json");
 
 require __DIR__ . "/../geo/config.php";
-require_once __DIR__ . "/../../../auth/firebase.php";
+require_once __DIR__ . "/../auth/firebase.php";
 require __DIR__ . "/../geo/response.php";
+require_once __DIR__ . "/../helpers/firebase_rtdb.php";
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     jsonResponse(false, [], "POST request required");
@@ -24,5 +25,8 @@ $stmt = $pdo->prepare(
      WHERE id=?"
 );
 $stmt->execute([$input['news_id']]);
+
+// Remove the RTDB node so the breaking ticker disappears on all clients
+rtdbDelete('/live/breaking/latest');
 
 jsonResponse(true, [], "breaking removed");
