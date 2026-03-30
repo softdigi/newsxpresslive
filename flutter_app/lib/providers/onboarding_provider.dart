@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/models/location_model.dart';
 import '../data/models/category.dart';
 import '../data/services/api_service.dart';
+import '../data/services/news_service.dart';
 import '../data/services/onboarding_service.dart';
 import '../data/services/notification_service.dart';
 
