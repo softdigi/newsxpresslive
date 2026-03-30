@@ -52,6 +52,7 @@ dependencies:
   google_sign_in: ^6.2.2
   firebase_messaging: ^15.2.4
   firebase_analytics: ^11.3.6
+  firebase_database: ^11.1.4
 
   # ── Monetization ──────────────────────────────────────────────────────
   google_mobile_ads: ^5.2.0
