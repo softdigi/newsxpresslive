@@ -1,0 +1,61 @@
+name: newsxpresslive
+description: NewsXpressLive – Breaking News, Latest Updates
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Networking
+  http: ^1.2.1
+
+  # State management
+  provider: ^6.1.2
+
+  # Images
+  cached_network_image: ^3.3.1
+
+  # Local storage (bookmarks, preferences)
+  shared_preferences: ^2.3.2
+
+  # Render HTML article body
+  flutter_html: ^3.0.0-beta.2
+
+  # Relative timestamps ("2 hours ago")
+  timeago: ^3.6.1
+
+  # Open external URLs
+  url_launcher: ^6.3.0
+
+  # Share articles
+  share_plus: ^9.0.0
+
+  # Google Fonts
+  google_fonts: ^6.2.1
+
+  # Icons
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+
+  # Uncomment when font files are added:
+  # fonts:
+  #   - family: NotoSansDevanagari
+  #     fonts:
+  #       - asset: assets/fonts/NotoSansDevanagari-Regular.ttf
