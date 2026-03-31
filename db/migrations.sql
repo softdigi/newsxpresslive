@@ -265,3 +265,56 @@ INSERT IGNORE INTO settings (setting_key, setting_value) VALUES
     ('plan_currency',       'USD'),
     ('ad_default_freq_cap', '5'),     -- ads per session for free users
     ('premium_teaser_pct',  '30');    -- % of premium article shown before paywall
+
+-- ============================================================
+-- Short Video Reels Feature
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS video_reels (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    reporter_id   INT DEFAULT NULL,
+    title         VARCHAR(255) NOT NULL,
+    description   TEXT DEFAULT NULL,
+    video_file    VARCHAR(255) NOT NULL,
+    thumbnail     VARCHAR(255) DEFAULT NULL,
+    category_id   INT DEFAULT NULL,
+    likes_count   INT UNSIGNED DEFAULT 0,
+    views_count   INT UNSIGNED DEFAULT 0,
+    comments_count INT UNSIGNED DEFAULT 0,
+    status        ENUM('pending','published','rejected') DEFAULT 'pending',
+    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_status     (status),
+    INDEX idx_reporter   (reporter_id),
+    INDEX idx_category   (category_id),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS reel_likes (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    reel_id    INT NOT NULL,
+    ip_hash    VARCHAR(64) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_reel_ip (reel_id, ip_hash),
+    INDEX idx_reel (reel_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS reel_comments (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    reel_id     INT NOT NULL,
+    author_name VARCHAR(100) NOT NULL,
+    content     TEXT NOT NULL,
+    status      ENUM('pending','approved') DEFAULT 'pending',
+    ip_hash     VARCHAR(64) NOT NULL,
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_reel   (reel_id),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Rate-limit table for reel comments
+CREATE TABLE IF NOT EXISTS reel_comment_rate_limit (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    ip_hash    VARCHAR(64) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_ip   (ip_hash),
+    INDEX idx_time (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

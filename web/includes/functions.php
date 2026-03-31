@@ -386,3 +386,31 @@ function wp_strip_html_tags(string $html): string
     $text = preg_replace('#<(br|p|div|li|h[1-6])[^>]*>#i', ' ', $html);
     return html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 }
+
+/**
+ * Returns the public URL for a reel video file.
+ */
+function reelVideoUrl(string $filename): string
+{
+    return mediaUrl($filename, 'reels');
+}
+
+/**
+ * Returns the public URL for a reel thumbnail.
+ * Falls back to a placeholder if none is set.
+ */
+function reelThumbUrl(string $filename = ''): string
+{
+    if ($filename !== '') {
+        return mediaUrl($filename, 'reels', SITE_URL . '/assets/img/reel-placeholder.jpg');
+    }
+    return SITE_URL . '/assets/img/reel-placeholder.jpg';
+}
+
+/**
+ * Returns the canonical URL for a reel detail page.
+ */
+function reelUrl(int $id): string
+{
+    return SITE_URL . '/reels/?id=' . $id;
+}

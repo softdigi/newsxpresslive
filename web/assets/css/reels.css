@@ -1,0 +1,475 @@
+/* ============================================================
+   NewsXpressLive – reels.css
+   Full-screen vertical video feed (9:16), Instagram-Reels-style
+   ============================================================ */
+
+/* ── Reset & container ────────────────────────────────────── */
+.reels-page {
+    margin: 0;
+    padding: 0;
+    background: #000;
+    overflow: hidden;
+    height: 100dvh;          /* dynamic viewport height */
+    height: 100vh;           /* fallback */
+}
+
+/* Hide the global site header & footer when the reels page is active */
+.reels-page .site-header,
+.reels-page .site-footer,
+.reels-page .topbar,
+.reels-page .breaking-ticker {
+    display: none !important;
+}
+
+/* ── Scroll container ─────────────────────────────────────── */
+#reels-feed {
+    height: 100%;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;          /* Firefox */
+}
+#reels-feed::-webkit-scrollbar { display: none; }
+
+/* ── Single reel slide ────────────────────────────────────── */
+.reel-slide {
+    position: relative;
+    width: 100%;
+    height: 100dvh;
+    height: 100vh;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    overflow: hidden;
+}
+
+/* ── Video element ────────────────────────────────────────── */
+.reel-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+/* Poster thumbnail shown before video loads */
+.reel-thumbnail {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+    transition: opacity .3s;
+}
+.reel-slide.playing .reel-thumbnail { opacity: 0; pointer-events: none; }
+
+/* ── Play/Pause tap overlay ───────────────────────────────── */
+.reel-tap-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    cursor: pointer;
+}
+
+/* Large centered play icon appears briefly on pause/play */
+.reel-play-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 72px;
+    height: 72px;
+    background: rgba(0,0,0,.55);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 2rem;
+    pointer-events: none;
+    z-index: 4;
+    transition: transform .15s ease, opacity .3s ease;
+    opacity: 0;
+}
+.reel-play-icon.show {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+}
+
+/* ── Progress bar ─────────────────────────────────────────── */
+.reel-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: var(--color-primary, #e50914);
+    z-index: 10;
+    transition: width .1s linear;
+}
+
+/* ── Overlay gradient & text ──────────────────────────────── */
+.reel-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1.5rem 1rem 4.5rem;
+    background: linear-gradient(transparent, rgba(0,0,0,.75) 60%, rgba(0,0,0,.92));
+    color: #fff;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.reel-overlay__reporter {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    margin-bottom: .55rem;
+    pointer-events: all;
+}
+.reel-overlay__reporter-name {
+    font-size: .8rem;
+    font-weight: 700;
+    color: #fff;
+    text-decoration: none;
+}
+.reel-overlay__reporter-name:hover { text-decoration: underline; }
+
+.reel-overlay__title {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin: 0 0 .35rem;
+}
+.reel-overlay__desc {
+    font-size: .82rem;
+    color: rgba(255,255,255,.8);
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ── Action sidebar ───────────────────────────────────────── */
+.reel-actions {
+    position: absolute;
+    right: 1rem;
+    bottom: 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+    align-items: center;
+    z-index: 6;
+}
+
+.reel-action-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .25rem;
+    padding: 0;
+    line-height: 1;
+    -webkit-tap-highlight-color: transparent;
+}
+.reel-action-btn svg {
+    width: 28px;
+    height: 28px;
+    fill: none;
+    stroke: #fff;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.7));
+}
+.reel-action-btn.liked svg { stroke: var(--color-primary, #e50914); fill: var(--color-primary, #e50914); }
+.reel-action-btn span {
+    font-size: .72rem;
+    font-weight: 700;
+    text-shadow: 0 1px 3px rgba(0,0,0,.8);
+}
+
+/* ── Mute button (top-right) ──────────────────────────────── */
+.reel-mute-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 10;
+    background: rgba(0,0,0,.45);
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #fff;
+    font-size: 1rem;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Top bar (logo + close) ───────────────────────────────── */
+.reels-topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .6rem 1rem;
+    background: linear-gradient(rgba(0,0,0,.5), transparent);
+    pointer-events: none;
+}
+.reels-topbar__logo {
+    font-size: 1rem;
+    font-weight: 900;
+    color: #fff;
+    text-decoration: none;
+    letter-spacing: .5px;
+    pointer-events: all;
+}
+.reels-topbar__close {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.4rem;
+    cursor: pointer;
+    pointer-events: all;
+    line-height: 1;
+}
+
+/* ── Comment drawer ───────────────────────────────────────── */
+.reel-comments-drawer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 60vh;
+    background: #1a1a1a;
+    border-radius: 18px 18px 0 0;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
+    overflow: hidden;
+}
+.reel-comments-drawer.open { transform: translateY(0); }
+
+.reel-comments-drawer__handle {
+    width: 40px;
+    height: 4px;
+    background: #555;
+    border-radius: 2px;
+    margin: .8rem auto .5rem;
+    flex-shrink: 0;
+}
+.reel-comments-drawer__title {
+    font-size: .9rem;
+    font-weight: 700;
+    color: #fff;
+    text-align: center;
+    padding: 0 1rem .6rem;
+    flex-shrink: 0;
+    border-bottom: 1px solid #333;
+}
+.reel-comments-drawer__list {
+    flex: 1;
+    overflow-y: auto;
+    padding: .6rem 1rem;
+    scrollbar-width: none;
+}
+.reel-comments-drawer__list::-webkit-scrollbar { display: none; }
+
+.reel-comment-item {
+    display: flex;
+    gap: .6rem;
+    margin-bottom: .8rem;
+}
+.reel-comment-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #333;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .8rem;
+    font-weight: 700;
+    color: #aaa;
+}
+.reel-comment-body { flex: 1; }
+.reel-comment-author { font-size: .75rem; font-weight: 700; color: #ccc; }
+.reel-comment-text   { font-size: .82rem; color: #eee; margin-top: 2px; }
+.reel-comment-time   { font-size: .68rem; color: #777; margin-top: 2px; }
+
+.reel-comments-drawer__form {
+    display: flex;
+    gap: .5rem;
+    padding: .6rem 1rem;
+    border-top: 1px solid #333;
+    flex-shrink: 0;
+    background: #1a1a1a;
+}
+.reel-comments-drawer__input {
+    flex: 1;
+    background: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 20px;
+    padding: .5rem 1rem;
+    color: #fff;
+    font-size: .85rem;
+    outline: none;
+}
+.reel-comments-drawer__submit {
+    background: var(--color-primary, #e50914);
+    border: none;
+    border-radius: 20px;
+    padding: .5rem 1rem;
+    color: #fff;
+    font-weight: 700;
+    font-size: .85rem;
+    cursor: pointer;
+}
+
+/* ── Share overlay ────────────────────────────────────────── */
+.reel-share-overlay {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #1a1a1a;
+    border-radius: 18px 18px 0 0;
+    z-index: 51;
+    padding: 1.2rem 1rem 2rem;
+    transform: translateY(100%);
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
+}
+.reel-share-overlay.open { transform: translateY(0); }
+.reel-share-overlay h3  { color: #fff; font-size: .95rem; margin-bottom: 1rem; text-align: center; }
+.reel-share-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: .8rem;
+    text-align: center;
+}
+.reel-share-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .4rem;
+    color: #eee;
+    text-decoration: none;
+    font-size: .72rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+}
+.reel-share-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+/* ── Backdrop dim for drawers ─────────────────────────────── */
+.reel-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 49;
+}
+.reel-backdrop.visible { display: block; }
+
+/* ── Loading indicator ────────────────────────────────────── */
+.reel-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    color: #fff;
+    font-size: .9rem;
+    flex-direction: column;
+    gap: .8rem;
+}
+.reel-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(255,255,255,.2);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Empty state ──────────────────────────────────────────── */
+.reel-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    color: #888;
+    gap: .6rem;
+    font-size: .9rem;
+}
+
+/* ── Swipe hint arrow ─────────────────────────────────────── */
+.reel-swipe-hint {
+    position: absolute;
+    bottom: 6rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .3rem;
+    color: rgba(255,255,255,.7);
+    font-size: .72rem;
+    animation: bounceHint 1.5s ease-in-out 2s 3 both;
+    pointer-events: none;
+}
+@keyframes bounceHint {
+    0%,100% { transform: translateX(-50%) translateY(0); opacity: .7; }
+    50%      { transform: translateX(-50%) translateY(-8px); opacity: 1; }
+}
+.reel-swipe-hint svg {
+    width: 20px;
+    height: 20px;
+    stroke: rgba(255,255,255,.7);
+    fill: none;
+    stroke-width: 2;
+}
+
+/* ── Desktop max-width centering ─────────────────────────── */
+@media (min-width: 600px) {
+    #reels-feed { max-width: 400px; margin: 0 auto; }
+    .reels-page { display: flex; justify-content: center; }
+    .reels-topbar,
+    .reel-comments-drawer,
+    .reel-share-overlay { max-width: 400px; left: 50%; transform: translateX(-50%); }
+    .reel-comments-drawer.open,
+    .reel-share-overlay.open { transform: translateX(-50%) translateY(0); }
+    .reel-backdrop { display: none !important; }
+}

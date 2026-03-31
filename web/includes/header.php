@@ -205,6 +205,10 @@ $currentUrl = SITE_URL . parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH)
             </li>
             <?php endforeach; ?>
             <li class="main-nav__item">
+                <a href="<?= SITE_URL ?>/reels/" class="main-nav__link"
+                   style="color:#e50914;font-weight:700;">🎬 Reels</a>
+            </li>
+            <li class="main-nav__item">
                 <a href="<?= SITE_URL ?>/subscribe/" class="main-nav__link"
                    style="color:#7c3aed;font-weight:700;">⭐ Premium</a>
             </li>
