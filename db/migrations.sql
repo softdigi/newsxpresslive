@@ -318,3 +318,50 @@ CREATE TABLE IF NOT EXISTS reel_comment_rate_limit (
     INDEX idx_ip   (ip_hash),
     INDEX idx_time (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- Viral Referral System
+-- ============================================================
+
+-- Add referral columns to users
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS referral_code   VARCHAR(12)  UNIQUE DEFAULT NULL AFTER ad_frequency_cap,
+    ADD COLUMN IF NOT EXISTS referred_by_id  INT          DEFAULT NULL        AFTER referral_code,
+    ADD COLUMN IF NOT EXISTS referral_points INT UNSIGNED DEFAULT 0           AFTER referred_by_id,
+    ADD INDEX IF NOT EXISTS idx_referral_code (referral_code),
+    ADD INDEX IF NOT EXISTS idx_referred_by  (referred_by_id);
+
+-- Multi-level referral rewards log
+CREATE TABLE IF NOT EXISTS referral_rewards (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    user_id      INT NOT NULL,              -- who earned the reward
+    referred_id  INT NOT NULL,              -- the new user who triggered it
+    level        TINYINT UNSIGNED NOT NULL, -- 1 = direct, 2 = indirect level-2, 3 = level-3
+    event        ENUM('install','signup','subscription') NOT NULL,
+    points       INT UNSIGNED NOT NULL DEFAULT 0,
+    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_id    (user_id),
+    INDEX idx_referred   (referred_id),
+    INDEX idx_level      (level),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Per-IP install-click log (for deduplication)
+CREATE TABLE IF NOT EXISTS referral_clicks (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    referral_code VARCHAR(12) NOT NULL,
+    ip_hash     VARCHAR(64) NOT NULL,
+    user_agent  VARCHAR(500) DEFAULT NULL,
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_code (referral_code),
+    INDEX idx_ip   (ip_hash)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Referral reward point values (configurable via settings table)
+INSERT IGNORE INTO settings (setting_key, setting_value) VALUES
+    ('referral_points_install',      '5'),
+    ('referral_points_signup',       '10'),
+    ('referral_points_subscription', '50'),
+    ('referral_max_levels',          '3'),
+    ('referral_level2_pct',          '50'),   -- level-2 earns 50% of level-1 points
+    ('referral_level3_pct',          '25');   -- level-3 earns 25% of level-1 points

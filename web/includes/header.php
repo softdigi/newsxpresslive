@@ -205,6 +205,10 @@ $currentUrl = SITE_URL . parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH)
             </li>
             <?php endforeach; ?>
             <li class="main-nav__item">
+                <a href="<?= SITE_URL ?>/referral/" class="main-nav__link"
+                   style="color:#f59e0b;font-weight:700;">🎁 Refer &amp; Earn</a>
+            </li>
+            <li class="main-nav__item">
                 <a href="<?= SITE_URL ?>/reels/" class="main-nav__link"
                    style="color:#e50914;font-weight:700;">🎬 Reels</a>
             </li>

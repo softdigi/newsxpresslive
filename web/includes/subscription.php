@@ -169,6 +169,7 @@ function logoutUser(): void
 
 /**
  * Create a new free user. Returns new user id or false on failure.
+ * Automatically generates a referral code and applies any pending referral cookie.
  */
 function registerUser(PDO $pdo, string $name, string $email, string $plain): int|false
 {
@@ -194,6 +195,20 @@ function registerUser(PDO $pdo, string $name, string $email, string $plain): int
         $uid = (int)$pdo->lastInsertId();
         $_SESSION[SESSION_USER_ID]    = $uid;
         $_SESSION[SESSION_AD_COUNTER] = 0;
+
+        // Auto-generate a referral code for every new user
+        require_once __DIR__ . '/referral.php';
+        generateReferralCode($pdo, $uid);
+
+        // Apply any pending referral code (from cookie or GET param stored in session)
+        $pendingRef = $_COOKIE[REFERRAL_COOKIE] ?? ($_SESSION['nxl_pending_ref'] ?? '');
+        if ($pendingRef !== '') {
+            applyReferral($pdo, $uid, $pendingRef);
+            // Clear the pending ref
+            unset($_SESSION['nxl_pending_ref']);
+            setcookie(REFERRAL_COOKIE, '', time() - 1, '/', '', false, true);
+        }
+
         return $uid;
     } catch (PDOException $e) {
         return false;
@@ -259,6 +274,17 @@ function activateSubscription(
             ':ea'   => $expiresAt,
             ':id'   => $userId,
         ]);
+
+        // Grant subscription referral reward to the user's referrer chain
+        require_once __DIR__ . '/referral.php';
+        try {
+            $refRow = $pdo->prepare('SELECT referred_by_id FROM users WHERE id = :id LIMIT 1');
+            $refRow->execute([':id' => $userId]);
+            $referrerId = (int)($refRow->fetchColumn() ?: 0);
+            if ($referrerId > 0) {
+                grantReward($pdo, $userId, $referrerId, 'subscription');
+            }
+        } catch (PDOException $e) { /* non-fatal */ }
 
         return true;
     } catch (PDOException $e) {
