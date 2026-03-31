@@ -131,4 +131,22 @@ try {
     error_log('user_profiles update failed: ' . $e->getMessage());
 }
 
+// ── Update viral score when a share event is tracked ─────────────────
+// (share_track.php also does this for web shares; this covers app events)
+if ($eventType === 'share') {
+    // Increment shares_count if not already done by share_track.php
+    // (app may call track.php directly without calling share_track.php)
+    try {
+        $pdo->prepare(
+            "UPDATE news SET shares_count = COALESCE(shares_count, 0) + 1
+             WHERE id = :id AND status = 'published'"
+        )->execute([':id' => $newsId]);
+    } catch (PDOException $e) {
+        error_log('track share increment: ' . $e->getMessage());
+    }
+}
+
+// Recalculate viral score for every tracked event (non-blocking)
+updateViralScore($pdo, $newsId);
+
 echo json_encode(['success' => true]);

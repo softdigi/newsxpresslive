@@ -25,8 +25,11 @@ class ApiEndpoints {
   /// GET  ?q=keyword&page=1 → search results
   static const String search = '$baseUrl/api/search.php';
 
-  /// GET  ?limit=5 → top-viewed articles (last 7 days)
+  /// GET  ?limit=5 → top-viral articles (last 7 days), ordered by viral_score
   static const String trending = '$baseUrl/api/trending.php';
+
+  /// POST { news_id } → increment shares_count, update viral score
+  static const String shareTrack = '$baseUrl/api/share_track.php';
 
   // ── Categories ────────────────────────────────────────────────────────
   /// GET → all categories list

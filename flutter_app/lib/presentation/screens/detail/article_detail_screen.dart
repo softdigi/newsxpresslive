@@ -32,7 +32,8 @@ class ArticleDetailScreen extends StatefulWidget {
 }
 
 class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
-  final _api     = NewsService(api: ApiService());
+  final _apiSvc  = ApiService();
+  late final _api = NewsService(api: _apiSvc);
   final _rt      = RealtimeService();
   NewsArticle?   _article;
   bool           _loading   = true;
@@ -172,6 +173,19 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     final url = '${ApiEndpoints.baseUrl}/news/detail.php?slug=${_article!.slug}&source=app';
     Share.share('${_article!.title}\n$url');
     AnalyticsService.instance.logShareClick(_article!.id, _article!.slug);
+    // Track share for viral score
+    _trackShare(_article!.id);
+  }
+
+  Future<void> _trackShare(int newsId) async {
+    try {
+      await _apiSvc.postJson(
+        ApiEndpoints.shareTrack,
+        body: {'news_id': newsId},
+      );
+    } catch (_) {
+      // Non-fatal — viral score will be recalculated by cron
+    }
   }
 
   @override
