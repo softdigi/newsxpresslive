@@ -128,6 +128,9 @@ $seoMeta = [
 ];
 
 require_once __DIR__ . '/includes/header.php';
+
+// ── WebSite + SiteLinksSearchBox JSON-LD ────────────────────────────
+renderJsonLd(buildWebSiteJsonLd());
 ?>
 
 <div class="container page-body">

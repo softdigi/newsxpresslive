@@ -183,3 +183,34 @@ INSERT IGNORE INTO settings (setting_key, setting_value) VALUES
 -- ('Science', 'science'),
 -- ('Education', 'education'),
 -- ('Environment', 'environment');
+
+-- ============================================================
+-- AI Personalized Feed – User Behavior Tracking
+-- ============================================================
+
+-- Raw per-event behavior log
+CREATE TABLE IF NOT EXISTS user_behavior (
+    id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+    session_id   VARCHAR(64)  NOT NULL,          -- SHA-256 of IP+UA; anonymous
+    news_id      INT          NOT NULL,
+    event_type   ENUM('click','read','scroll','share') NOT NULL DEFAULT 'click',
+    time_spent   SMALLINT UNSIGNED DEFAULT 0,    -- seconds on page
+    scroll_depth TINYINT UNSIGNED DEFAULT 0,     -- 0-100 %
+    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_session   (session_id),
+    INDEX idx_news      (news_id),
+    INDEX idx_session_news (session_id, news_id),
+    INDEX idx_created   (created_at),
+    CONSTRAINT fk_ub_news FOREIGN KEY (news_id) REFERENCES news(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Aggregated category + tag interest profile per session
+CREATE TABLE IF NOT EXISTS user_profiles (
+    session_id      VARCHAR(64) NOT NULL,
+    category_id     INT         DEFAULT NULL,
+    tag_id          INT         DEFAULT NULL,
+    interest_score  FLOAT       NOT NULL DEFAULT 0,  -- weighted rolling sum
+    last_updated    DATETIME    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (session_id, category_id, tag_id),
+    INDEX idx_session_score (session_id, interest_score)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

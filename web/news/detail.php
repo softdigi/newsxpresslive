@@ -114,17 +114,25 @@ if (!empty($news['category_id'])) {
 $keyPoints = extractKeyPoints($news['content'], 3);
 
 /* ── SEO meta + structured data ─────────────────────────────────────── */
+$_tagNames = !empty($articleTags) ? array_column($articleTags, 'name') : [];
 $seoMeta = [
-    'title'        => $news['title'],
-    'description'  => excerpt($news['content'], 160),
-    'image'        => newsImage($news['featured_image']),
-    'url'          => newsUrl($news['slug']),
-    'type'         => 'article',
-    'keywords'     => !empty($news['category_name']) ? $news['category_name'] : '',
-    'author'       => !empty($news['reporter_name']) ? $news['reporter_name'] : '',
-    'published_at' => date('c', strtotime($news['created_at'])),
+    'title'         => $news['title'],
+    'description'   => excerpt($news['content'], 160),
+    'image'         => newsImage($news['featured_image']),
+    'url'           => newsUrl($news['slug']),
+    'type'          => 'article',
+    'keywords'      => !empty($news['category_name']) ? $news['category_name'] : '',
+    'author'        => !empty($news['reporter_name']) ? $news['reporter_name'] : '',
+    'published_at'  => date('c', strtotime($news['created_at'])),
+    'modified_at'   => !empty($news['updated_at'])
+                           ? date('c', strtotime($news['updated_at']))
+                           : date('c', strtotime($news['created_at'])),
+    'section'       => $news['category_name'] ?? '',
+    'tags'          => $_tagNames,
+    'news_keywords' => implode(', ', $_tagNames),
+    'amphtml'       => ampUrl($news['slug']),
     // Prefetch the next article so it loads instantly when the user clicks
-    'prefetch_url' => $nextArticle ? newsUrl($nextArticle['slug']) : '',
+    'prefetch_url'  => $nextArticle ? newsUrl($nextArticle['slug']) : '',
 ];
 
 // Sidebar – reuse the latest-news query, capped at 6 for efficiency
@@ -158,7 +166,7 @@ try {
 require_once __DIR__ . '/../includes/header.php';
 
 // ── JSON-LD Structured Data ──────────────────────────────────────────────
-renderJsonLd(buildNewsArticleJsonLd($news));
+renderJsonLd(buildNewsArticleJsonLd($news, $articleTags));
 
 // BreadcrumbList
 $breadcrumbItems = [['name' => 'Home', 'url' => SITE_URL . '/']];
@@ -301,7 +309,7 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
                  alt="<?= htmlspecialchars($news['title'], ENT_QUOTES, 'UTF-8') ?>"
                  class="article__hero-img"
                  itemprop="image"
-                 loading="lazy">
+                 fetchpriority="high">
         </figure>
         <?php endif; ?>
 
@@ -663,5 +671,8 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
 </aside>
 
 </div><!-- /.container .page-body -->
+
+<!-- Behavior tracker: measures time-on-page, scroll depth, sends to /api/track.php -->
+<script src="<?= SITE_URL ?>/assets/js/tracker.js" defer></script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

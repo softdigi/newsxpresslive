@@ -45,8 +45,6 @@ $currentUrl = SITE_URL . parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH)
     <link rel="dns-prefetch" href="//www.google-analytics.com">
     <!-- Google News Sitemap -->
     <link rel="sitemap" type="application/xml" href="<?= SITE_URL ?>/news-sitemap.xml.php">
-    <!-- Open Graph Image for sharing -->
-    <meta property="og:image" content="<?= SITE_URL ?>/assets/img/og-default.jpg">
     <!-- Stylesheet -->
     <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css">
 </head>
