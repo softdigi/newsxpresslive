@@ -33,11 +33,21 @@ class NewsProvider extends ChangeNotifier {
   int                     _currentPage = 1;
   bool                    _hasMore     = true;
 
-  List<NewsArticle> get articles  => _articles;
-  LoadState         get loadState => _loadState;
-  String            get errorMsg  => _errorMsg;
-  bool              get hasMore   => _hasMore;
-  bool              get isLoading => _loadState == LoadState.loading;
+  /// When true the feed is fetched in viral-boost mode (?sort=viral).
+  bool _viralSort = false;
+
+  List<NewsArticle> get articles   => _articles;
+  LoadState         get loadState  => _loadState;
+  String            get errorMsg   => _errorMsg;
+  bool              get hasMore    => _hasMore;
+  bool              get isLoading  => _loadState == LoadState.loading;
+  bool              get viralSort  => _viralSort;
+
+  /// Toggle viral-boost sort and reload the feed from page 1.
+  void toggleViralSort() {
+    _viralSort = !_viralSort;
+    loadNewsFeed(reset: true);
+  }
 
   // ── Trending news ─────────────────────────────────────────────────────
   final List<NewsArticle> _trending      = [];
@@ -112,6 +122,7 @@ class NewsProvider extends ChangeNotifier {
         page:         _currentPage,
         perPage:      10,
         categorySlug: _selectedCat?.slug,
+        sort:         _viralSort ? 'viral' : null,
       );
       if (items.isEmpty) {
         _hasMore = false;

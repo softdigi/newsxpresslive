@@ -14,15 +14,19 @@ class NewsService {
 
   /// Fetch a paginated list of news articles.
   /// Pass [categorySlug] to filter by category.
+  /// Pass [sort] = `'viral'` to enable feed-boost mode (viral articles
+  /// injected at the configurable boost percentage).
   Future<List<NewsArticle>> getNewsList({
     int page = 1,
     int perPage = 10,
     String? categorySlug,
+    String? sort,
   }) async {
     final params = <String, String>{
       'page': page.toString(),
       'per':  perPage.toString(),
       if (categorySlug != null) 'category': categorySlug,
+      if (sort != null && sort.isNotEmpty) 'sort': sort,
     };
     final data = await _api.get(ApiEndpoints.newsList, queryParams: params);
     if (data is! List) return [];
@@ -52,7 +56,7 @@ class NewsService {
 
   // ── Trending news ─────────────────────────────────────────────────────
 
-  /// Fetch top-viewed articles from the last 7 days.
+  /// Fetch top-viral articles from the last 7 days, ordered by viral_score.
   Future<List<NewsArticle>> getTrending({int limit = 5}) async {
     final data = await _api.get(
       ApiEndpoints.trending,

@@ -6,6 +6,7 @@ import '../../../../core/utils/date_formatter.dart';
 
 /// Horizontally scrollable trending news strip.
 /// Each item is a small card with thumbnail, rank number, and title.
+/// Articles flagged as [NewsArticle.isTrending] show a 🔥 badge.
 class TrendingSection extends StatelessWidget {
   const TrendingSection({
     super.key,
@@ -60,7 +61,7 @@ class _TrendingCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Thumbnail with rank badge
+            // Thumbnail with rank badge and optional 🔥 trending badge
             Stack(
               children: [
                 ClipRRect(
@@ -93,6 +94,37 @@ class _TrendingCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                // 🔥 Trending badge – shown only when is_trending = true
+                if (article.isTrending)
+                  Positioned(
+                    top:   6,
+                    right: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.deepOrange.shade700.withOpacity(0.92),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('🔥',
+                              style: TextStyle(fontSize: 10)),
+                          SizedBox(width: 2),
+                          Text(
+                            'Trending',
+                            style: TextStyle(
+                              color:      Colors.white,
+                              fontSize:   9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 6),

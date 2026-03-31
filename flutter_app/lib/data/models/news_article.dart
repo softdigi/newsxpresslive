@@ -14,6 +14,13 @@ class NewsArticle {
   final String? agencyName;
   final int    views;
 
+  /// Viral engagement score (views × weight + shares × weight + comments …).
+  /// Populated by the trending and more_news APIs.
+  final double viralScore;
+
+  /// True when the backend cron has flagged this article as trending.
+  final bool isTrending;
+
   const NewsArticle({
     required this.id,
     required this.title,
@@ -21,13 +28,15 @@ class NewsArticle {
     required this.content,
     this.featuredImage,
     required this.createdAt,
-    this.isBreaking = false,
+    this.isBreaking  = false,
     this.categoryName,
     this.categorySlug,
     this.reporterName,
     this.reporterPhoto,
     this.agencyName,
-    this.views = 0,
+    this.views      = 0,
+    this.viralScore = 0.0,
+    this.isTrending = false,
   });
 
   factory NewsArticle.fromJson(Map<String, dynamic> json) {
@@ -45,6 +54,8 @@ class NewsArticle {
       reporterPhoto: json['reporter_photo'] as String?,
       agencyName:    json['agency_name']    as String?,
       views:         _parseInt(json['views']),
+      viralScore:    _parseDouble(json['viral_score']),
+      isTrending:    _parseBool(json['is_trending']),
     );
   }
 
@@ -62,10 +73,13 @@ class NewsArticle {
     'reporter_photo': reporterPhoto,
     'agency_name':    agencyName,
     'views':          views,
+    'viral_score':    viralScore,
+    'is_trending':    isTrending,
   };
 
-  static int  _parseInt(dynamic v)  => v == null ? 0 : int.tryParse(v.toString()) ?? 0;
-  static bool _parseBool(dynamic v) => v == true || v == 1 || v == '1';
+  static int    _parseInt(dynamic v)    => v == null ? 0 : int.tryParse(v.toString()) ?? 0;
+  static double _parseDouble(dynamic v) => v == null ? 0.0 : double.tryParse(v.toString()) ?? 0.0;
+  static bool   _parseBool(dynamic v)   => v == true || v == 1 || v == '1';
 
   @override
   bool operator ==(Object other) => other is NewsArticle && other.id == id;
