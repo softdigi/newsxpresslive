@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/bookmark_provider.dart';
+import 'providers/offline_provider.dart';
 import 'presentation/screens/home/home_screen.dart';
 import 'presentation/screens/search/search_screen.dart';
 import 'presentation/screens/bookmarks/bookmarks_screen.dart';
+import 'presentation/screens/offline/offline_screen.dart';
 import 'presentation/screens/settings/settings_screen.dart';
 import 'core/constants/app_strings.dart';
 import 'core/constants/app_colors.dart';
@@ -28,6 +30,7 @@ class MainNavigationState extends State<MainNavigation> {
     HomeScreen(),
     SearchScreen(),
     BookmarksScreen(),
+    OfflineScreen(),
     SettingsScreen(),
   ];
 
@@ -44,8 +47,8 @@ class MainNavigationState extends State<MainNavigation> {
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: Consumer<BookmarkProvider>(
-        builder: (context, bm, _) => BottomNavigationBar(
+      bottomNavigationBar: Consumer2<BookmarkProvider, OfflineProvider>(
+        builder: (context, bm, offline, _) => BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (i) => setState(() => _currentIndex = i),
           items: [
@@ -64,6 +67,11 @@ class MainNavigationState extends State<MainNavigation> {
               activeIcon: _bookmarkIcon(bm.count, true),
               label:      AppStrings.navBookmarks,
             ),
+            BottomNavigationBarItem(
+              icon:       _offlineIcon(offline.count, false),
+              activeIcon: _offlineIcon(offline.count, true),
+              label:      AppStrings.navOffline,
+            ),
             const BottomNavigationBarItem(
               icon:       Icon(Icons.settings_outlined),
               activeIcon: Icon(Icons.settings_rounded),
@@ -79,6 +87,19 @@ class MainNavigationState extends State<MainNavigation> {
     final icon = Icon(active
         ? Icons.bookmark_rounded
         : Icons.bookmark_border_rounded);
+    if (count == 0) return icon;
+    return Badge(
+      backgroundColor: AppColors.primary,
+      label: Text(count > 99 ? '99+' : count.toString(),
+          style: const TextStyle(fontSize: 9)),
+      child: icon,
+    );
+  }
+
+  Widget _offlineIcon(int count, bool active) {
+    final icon = Icon(active
+        ? Icons.download_for_offline_rounded
+        : Icons.download_for_offline_outlined);
     if (count == 0) return icon;
     return Badge(
       backgroundColor: AppColors.primary,

@@ -6,6 +6,7 @@ import 'core/constants/app_colors.dart';
 import 'providers/news_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/bookmark_provider.dart';
+import 'providers/offline_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/onboarding_provider.dart';
 import 'providers/feature_flags_provider.dart';
@@ -19,11 +20,13 @@ class NewsXpressApp extends StatelessWidget {
     super.key,
     required this.themeProvider,
     required this.bookmarkProvider,
+    required this.offlineProvider,
     required this.onboardingDone,
   });
 
   final ThemeProvider    themeProvider;
   final BookmarkProvider bookmarkProvider;
+  final OfflineProvider  offlineProvider;
   final bool             onboardingDone;
 
   @override
@@ -32,6 +35,7 @@ class NewsXpressApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider.value(value: bookmarkProvider),
+        ChangeNotifierProvider.value(value: offlineProvider),
         ChangeNotifierProvider(create: (_) => NewsProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => OnboardingProvider()),

@@ -12,6 +12,7 @@ import '../../../data/services/news_service.dart';
 import '../../../data/services/analytics_service.dart';
 import '../../../data/services/realtime_service.dart';
 import '../../../providers/bookmark_provider.dart';
+import '../../../providers/offline_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/api_endpoints.dart';
@@ -236,6 +237,34 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                 icon: const Icon(Icons.share_rounded),
                 tooltip: AppStrings.share,
                 onPressed: _share,
+              ),
+              // Offline download toggle
+              Consumer<OfflineProvider>(
+                builder: (_, offline, __) {
+                  final saved = offline.isOffline(art.slug);
+                  return IconButton(
+                    icon: Icon(saved
+                        ? Icons.download_done_rounded
+                        : Icons.download_for_offline_outlined),
+                    tooltip: saved
+                        ? AppStrings.offlineRemove
+                        : AppStrings.offlineDownload,
+                    onPressed: () async {
+                      HapticFeedback.lightImpact();
+                      await offline.toggle(art);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(saved
+                                ? AppStrings.offlineRemovedSnack
+                                : AppStrings.offlineSavedSnack),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+                  );
+                },
               ),
               Consumer<BookmarkProvider>(
                 builder: (_, bm, __) {

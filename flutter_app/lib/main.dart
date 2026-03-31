@@ -7,9 +7,11 @@ import 'package:app_links/app_links.dart';
 import 'app.dart';
 import 'providers/theme_provider.dart';
 import 'providers/bookmark_provider.dart';
+import 'providers/offline_provider.dart';
 import 'data/services/notification_service.dart';
 import 'data/services/analytics_service.dart';
 import 'data/services/cache_service.dart';
+import 'data/services/offline_service.dart';
 import 'data/services/feature_flags_service.dart';
 import 'data/services/onboarding_service.dart';
 import 'presentation/screens/detail/article_detail_screen.dart';
@@ -41,6 +43,7 @@ Future<void> main() async {
 
   // ── Hive offline cache ─────────────────────────────────────────────────
   await CacheService.instance.init();
+  await OfflineService.instance.init();
 
   // ── AdMob ──────────────────────────────────────────────────────────────
   // Requires AdMob App ID in AndroidManifest.xml / Info.plist.
@@ -76,6 +79,7 @@ Future<void> main() async {
   final app = NewsXpressApp(
     themeProvider:    ThemeProvider(prefs),
     bookmarkProvider: BookmarkProvider(prefs),
+    offlineProvider:  OfflineProvider(),
     onboardingDone:   onboardingDone,
   );
 

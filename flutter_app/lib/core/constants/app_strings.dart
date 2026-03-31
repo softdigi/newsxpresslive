@@ -110,6 +110,19 @@ class AppStrings {
   static const String moreByReporter    = 'More by this Reporter';
 
   // ── Offline / cache ───────────────────────────────────────────────────
-  static const String offlineBanner     = 'You\'re offline — showing cached content';
+  static const String offlineBanner        = 'You\'re offline — showing cached content';
+  static const String navOffline           = 'Offline';
+  static const String noOfflineArticles    = 'No articles saved for offline reading.';
+  static const String offlineHint          = 'Open any article and tap the download icon to save it for offline reading.';
+  static const String offlineSaved         = 'Offline';
+  static const String offlineSync          = 'Sync now';
+  static const String offlineSyncing       = 'Syncing…';
+  static const String offlineLastSynced    = 'Last synced';
+  static const String offlineClearTitle    = 'Remove all offline articles?';
+  static const String offlineClearBody     = 'Downloaded articles will be deleted from this device.';
+  static const String offlineDownload      = 'Save for offline';
+  static const String offlineRemove        = 'Remove offline copy';
+  static const String offlineSavedSnack    = 'Article saved for offline reading';
+  static const String offlineRemovedSnack  = 'Offline copy removed';
 }
 
