@@ -392,3 +392,37 @@ INSERT IGNORE INTO settings (setting_key, setting_value) VALUES
     ('viral_trending_threshold', '50'),  -- min score to auto-mark as trending
     ('viral_decay_hours',        '72'),  -- articles older than N hours lose 50% of score
     ('viral_feed_boost_pct',     '20');  -- % of feed slots filled with top-viral articles
+
+-- ============================================================
+-- Fake News Detection System
+-- ============================================================
+
+-- Computed analysis columns on the news row
+ALTER TABLE news ADD COLUMN IF NOT EXISTS fake_score    FLOAT        NOT NULL DEFAULT 0
+    COMMENT '0-100 risk score from NLP detector';
+ALTER TABLE news ADD COLUMN IF NOT EXISTS fake_flags    TEXT         DEFAULT NULL
+    COMMENT 'JSON array of triggered signal names';
+ALTER TABLE news ADD COLUMN IF NOT EXISTS fake_verdict  ENUM('clean','suspicious','likely_fake')
+    NOT NULL DEFAULT 'clean';
+ALTER TABLE news ADD COLUMN IF NOT EXISTS fake_reviewed TINYINT(1)   NOT NULL DEFAULT 0
+    COMMENT '1 once an admin has reviewed this article';
+ALTER TABLE news ADD COLUMN IF NOT EXISTS fake_scanned_at DATETIME   DEFAULT NULL;
+
+-- Review queue: one row per article that needs human eyes
+CREATE TABLE IF NOT EXISTS fake_news_queue (
+    id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    news_id      INT UNSIGNED NOT NULL,
+    fake_score   FLOAT        NOT NULL DEFAULT 0,
+    fake_verdict ENUM('suspicious','likely_fake') NOT NULL DEFAULT 'suspicious',
+    fake_flags   TEXT         DEFAULT NULL,
+    reviewed     TINYINT(1)   NOT NULL DEFAULT 0,
+    reviewed_by  INT UNSIGNED DEFAULT NULL   COMMENT 'admin_users.id',
+    review_note  TEXT         DEFAULT NULL,
+    created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reviewed_at  DATETIME     DEFAULT NULL,
+    UNIQUE KEY  uq_queue_news (news_id),
+    INDEX idx_queue_reviewed (reviewed, fake_score)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Index for fast flagged-article queries
+CREATE INDEX IF NOT EXISTS idx_news_fake_verdict ON news (fake_verdict, fake_reviewed);
