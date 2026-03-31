@@ -214,3 +214,54 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     PRIMARY KEY (session_id, category_id, tag_id),
     INDEX idx_session_score (session_id, interest_score)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- Monetization System
+-- ============================================================
+
+-- Premium / Sponsored columns on news table
+ALTER TABLE news ADD COLUMN IF NOT EXISTS is_premium   TINYINT(1) DEFAULT 0;
+ALTER TABLE news ADD COLUMN IF NOT EXISTS is_sponsored TINYINT(1) DEFAULT 0;
+
+-- Subscriber / registered user accounts
+CREATE TABLE IF NOT EXISTS users (
+    id                   INT AUTO_INCREMENT PRIMARY KEY,
+    name                 VARCHAR(150) NOT NULL,
+    email                VARCHAR(255) UNIQUE NOT NULL,
+    password_hash        VARCHAR(255) NOT NULL,
+    subscription_status  ENUM('free','active','expired','cancelled') DEFAULT 'free',
+    subscription_plan    ENUM('monthly','yearly') DEFAULT NULL,
+    subscription_expires DATETIME DEFAULT NULL,
+    ad_frequency_cap     TINYINT UNSIGNED DEFAULT 5,  -- max ads per session; 0 = default
+    created_at           DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_email  (email),
+    INDEX idx_status (subscription_status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Subscription payment records
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    user_id     INT NOT NULL,
+    plan        ENUM('monthly','yearly') NOT NULL,
+    amount      DECIMAL(8,2) NOT NULL,
+    currency    CHAR(3) DEFAULT 'USD',
+    status      ENUM('pending','active','expired','cancelled','refunded') DEFAULT 'pending',
+    gateway     VARCHAR(50) DEFAULT 'manual',  -- stripe|razorpay|manual
+    gateway_ref VARCHAR(255) DEFAULT NULL,
+    starts_at   DATETIME NOT NULL,
+    expires_at  DATETIME NOT NULL,
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user   (user_id),
+    INDEX idx_status (status),
+    CONSTRAINT fk_sub_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Subscription plan pricing (stored in settings table)
+INSERT IGNORE INTO settings (setting_key, setting_value) VALUES
+    ('plan_monthly_price',  '4.99'),
+    ('plan_monthly_label',  'Monthly'),
+    ('plan_yearly_price',   '39.99'),
+    ('plan_yearly_label',   'Yearly'),
+    ('plan_currency',       'USD'),
+    ('ad_default_freq_cap', '5'),     -- ads per session for free users
+    ('premium_teaser_pct',  '30');    -- % of premium article shown before paywall

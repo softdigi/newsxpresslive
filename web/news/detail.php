@@ -7,6 +7,7 @@
 
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/subscription.php';
 
 // Validate slug param
 $slug = getParam('slug');
@@ -20,7 +21,7 @@ $stmt = $pdo->prepare(
     'SELECT n.id, n.title, n.slug, n.content, n.featured_image,
             n.created_at, n.updated_at, n.is_breaking,
             n.reporter_id, n.agency_id, n.category_id,
-            n.views,
+            n.views, n.is_premium, n.is_sponsored,
             c.name  AS category_name, c.slug AS category_slug,
             r.name  AS reporter_name, r.photo AS reporter_photo,
             r.bio   AS reporter_bio,
@@ -148,6 +149,14 @@ $adHeader    = getSetting($pdo, 'ad_header');
 $adInContent = getSetting($pdo, 'ad_in_content');
 $adSidebar   = getSetting($pdo, 'ad_sidebar');
 
+/* ── Subscription / premium access ─────────────────────────────────── */
+$currentUser    = getCurrentUser($pdo);
+$userSubscribed = isSubscribed($currentUser);
+$isPremiumArticle = !empty($news['is_premium']);
+$isSponsored    = !empty($news['is_sponsored']);
+// Subscribers are ad-free; check frequency cap for free users
+$showAdInContent = !$isSponsored && !empty($adInContent) && shouldShowAd($pdo, $currentUser);
+
 /* ── Approved comments for this article ────────────────────────────── */
 $comments = [];
 try {
@@ -220,6 +229,13 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
 
             <?php if ($news['is_breaking']): ?>
             <span class="badge badge--breaking translatable" data-hi="ब्रेकिंग">Breaking</span>
+            <?php endif; ?>
+
+            <?php if ($isPremiumArticle): ?>
+            <span class="badge" style="background:#7c3aed;color:#fff;font-size:.65rem;padding:2px 8px;border-radius:3px;font-weight:700;letter-spacing:.5px;vertical-align:middle;">⭐ PREMIUM</span>
+            <?php endif; ?>
+            <?php if ($isSponsored): ?>
+            <span class="badge" style="background:#f59e0b;color:#fff;font-size:.65rem;padding:2px 8px;border-radius:3px;font-weight:700;letter-spacing:.5px;vertical-align:middle;">💼 SPONSORED</span>
             <?php endif; ?>
 
             <h1 class="article__title" itemprop="headline">
@@ -317,6 +333,52 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
              SECURITY NOTE: article body is stored as HTML (rich text editor output).
              In production, sanitize HTML at write-time with a library such as HTML Purifier
              before storing it in the database to prevent stored XSS. -->
+        <?php if ($isPremiumArticle && !$userSubscribed): ?>
+        <!-- Premium paywall: show teaser, then upsell -->
+        <?php
+        // Strip tags for safe excerpt; truncate to PREMIUM_TEASER_PERCENT of word count
+        $teaserPct   = (int)getSetting($pdo, 'premium_teaser_pct', (string)PREMIUM_TEASER_PERCENT);
+        $words       = explode(' ', wp_strip_html_tags($news['content']));
+        $teaserCount = max(40, (int)(count($words) * $teaserPct / 100));
+        $teaserWords = array_slice($words, 0, $teaserCount);
+        $teaserText  = implode(' ', $teaserWords) . '…';
+        ?>
+        <div class="article__body article__body--teaser" itemprop="articleBody"
+             style="position:relative;overflow:hidden;">
+            <p><?= htmlspecialchars($teaserText, ENT_QUOTES, 'UTF-8') ?></p>
+            <!-- Gradient fade -->
+            <div style="position:absolute;bottom:0;left:0;right:0;height:120px;
+                        background:linear-gradient(transparent,#fff);pointer-events:none;"></div>
+        </div>
+        <!-- Premium upsell banner -->
+        <div class="premium-upsell"
+             style="border:2px solid #7c3aed;border-radius:12px;padding:2rem;text-align:center;margin:1.5rem 0;background:#faf5ff;">
+            <div style="font-size:2rem;margin-bottom:.5rem;">⭐</div>
+            <h3 style="font-size:1.2rem;font-weight:800;color:#7c3aed;margin-bottom:.5rem;">This is a Premium Article</h3>
+            <p style="color:#555;font-size:.95rem;margin-bottom:1.2rem;max-width:400px;margin-inline:auto;">
+                Subscribe to get unlimited access to all premium articles and an ad-free reading experience.
+            </p>
+            <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+                <a href="<?= SITE_URL ?>/subscribe/?plan=monthly"
+                   style="padding:.7rem 1.6rem;background:#7c3aed;color:#fff;font-weight:700;border-radius:8px;text-decoration:none;font-size:.95rem;">
+                   Monthly – <?= htmlspecialchars(PLAN_CURRENCY, ENT_QUOTES, 'UTF-8') ?><?= PLAN_MONTHLY_PRICE ?>/mo
+                </a>
+                <a href="<?= SITE_URL ?>/subscribe/?plan=yearly"
+                   style="padding:.7rem 1.6rem;background:#e50914;color:#fff;font-weight:700;border-radius:8px;text-decoration:none;font-size:.95rem;">
+                   Yearly – <?= htmlspecialchars(PLAN_CURRENCY, ENT_QUOTES, 'UTF-8') ?><?= PLAN_YEARLY_PRICE ?>/yr
+                </a>
+            </div>
+            <?php if ($currentUser): ?>
+            <p style="margin-top:1rem;font-size:.85rem;color:#888;">
+                Already subscribed? <a href="<?= SITE_URL ?>/subscribe/account.php">Check your account</a>
+            </p>
+            <?php else: ?>
+            <p style="margin-top:1rem;font-size:.85rem;color:#888;">
+                <a href="<?= SITE_URL ?>/subscribe/login.php">Login</a> to access your subscription.
+            </p>
+            <?php endif; ?>
+        </div>
+        <?php else: ?>
         <div class="article__body" itemprop="articleBody"
              data-lockable="true"
              data-lock-percent="<?= ARTICLE_LOCK_PERCENT ?>"
@@ -324,9 +386,11 @@ renderJsonLd(buildBreadcrumbJsonLd($breadcrumbItems));
              data-app-store="<?= htmlspecialchars(APP_STORE_URL,  ENT_QUOTES, 'UTF-8') ?>">
             <?= $news['content'] ?>
         </div>
+        <?php endif; ?>
 
-        <!-- In-Content Ad -->
-        <?php if (!empty($adInContent)): ?>
+        <!-- In-Content Ad (frequency-capped; hidden for subscribers) -->
+        <?php if ($showAdInContent): ?>
+        <?php recordAdImpression(); ?>
         <div class="ad-slot ad-slot--in-content" style="text-align:center;margin:1.5rem 0;">
             <?= $adInContent ?>
         </div>

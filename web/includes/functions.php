@@ -375,3 +375,14 @@ function getSetting(PDO $pdo, string $key, string $default = ''): string
     }
     return $cache[$key] !== '' ? $cache[$key] : $default;
 }
+
+/**
+ * Strip HTML tags and decode entities, returning plain text.
+ * Used for building premium article teasers server-side.
+ */
+function wp_strip_html_tags(string $html): string
+{
+    // Replace block-level tags with a space so words don't run together
+    $text = preg_replace('#<(br|p|div|li|h[1-6])[^>]*>#i', ' ', $html);
+    return html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+}

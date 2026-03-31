@@ -29,6 +29,7 @@ $featuredNews = $featuredStmt->fetchAll();
 /* ── 2. Latest news grid (9 items) ─────────────────────────────────── */
 $latestStmt = $pdo->prepare(
     'SELECT n.id, n.title, n.slug, n.featured_image, n.content, n.created_at, n.views,
+            n.is_premium, n.is_sponsored,
             c.name AS category_name, c.slug AS category_slug
      FROM news n
      LEFT JOIN categories c ON c.id = n.category_id
@@ -209,6 +210,12 @@ renderJsonLd(buildWebSiteJsonLd());
                        class="badge badge--outline">
                         <?= htmlspecialchars($news['category_name'], ENT_QUOTES, 'UTF-8') ?>
                     </a>
+                    <?php endif; ?>
+                    <?php if (!empty($news['is_premium'])): ?>
+                    <span class="badge" style="background:#7c3aed;color:#fff;font-size:.6rem;padding:1px 6px;border-radius:3px;font-weight:700;">⭐ PREMIUM</span>
+                    <?php endif; ?>
+                    <?php if (!empty($news['is_sponsored'])): ?>
+                    <span class="badge" style="background:#f59e0b;color:#fff;font-size:.6rem;padding:1px 6px;border-radius:3px;font-weight:700;">💼 SPONSORED</span>
                     <?php endif; ?>
                     <h3 class="news-card__title">
                         <a href="<?= htmlspecialchars(newsUrl($news['slug']), ENT_QUOTES, 'UTF-8') ?>">

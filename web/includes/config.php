@@ -32,6 +32,12 @@ define('APP_STORE_URL',  'https://apps.apple.com/app/newsxpresslive/id000000000'
 // Set to 0 to disable locking.
 define('ARTICLE_LOCK_PERCENT', 60);
 
+// Monetization: Premium subscription
+define('PREMIUM_TEASER_PERCENT', 30);   // % of premium article shown before hard paywall
+define('PLAN_MONTHLY_PRICE',  '4.99');
+define('PLAN_YEARLY_PRICE',  '39.99');
+define('PLAN_CURRENCY', 'USD');
+
 $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET;
 
 $options = [

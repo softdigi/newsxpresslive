@@ -11,6 +11,7 @@ if (!isset($pdo)) {
 }
 require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/seo.php';
+require_once __DIR__ . '/subscription.php';
 
 // Fetch categories for navigation menu (uses static cache inside getAllCategories)
 $navCategories = getAllCategories($pdo);
@@ -164,6 +165,21 @@ $currentUrl = SITE_URL . parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH)
             <span class="nav-toggle__bar"></span>
             <span class="nav-toggle__bar"></span>
         </button>
+
+        <!-- Subscriber account pill -->
+        <?php
+        $_headerUser = getCurrentUser($pdo);
+        if ($_headerUser && isSubscribed($_headerUser)): ?>
+        <a href="<?= SITE_URL ?>/subscribe/account.php"
+           style="font-size:.78rem;font-weight:700;color:#7c3aed;background:#f5f0ff;padding:4px 10px;border-radius:20px;text-decoration:none;white-space:nowrap;">
+            ⭐ <?= htmlspecialchars($_headerUser['name'], ENT_QUOTES, 'UTF-8') ?>
+        </a>
+        <?php elseif (!$_headerUser): ?>
+        <a href="<?= SITE_URL ?>/subscribe/"
+           style="font-size:.78rem;font-weight:700;color:#7c3aed;background:#f5f0ff;padding:4px 10px;border-radius:20px;text-decoration:none;white-space:nowrap;display:none;" class="premium-cta-pill">
+            ⭐ Go Premium
+        </a>
+        <?php endif; ?>
     </div>
 </header>
 
@@ -188,6 +204,10 @@ $currentUrl = SITE_URL . parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH)
                 </a>
             </li>
             <?php endforeach; ?>
+            <li class="main-nav__item">
+                <a href="<?= SITE_URL ?>/subscribe/" class="main-nav__link"
+                   style="color:#7c3aed;font-weight:700;">⭐ Premium</a>
+            </li>
         </ul>
     </div>
 </nav>
