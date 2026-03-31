@@ -133,7 +133,51 @@ class _HomeScreenState extends State<HomeScreen> {
                 // ── Latest News section ───────────────────────────────────
                 const SliverToBoxAdapter(child: SizedBox(height: 20)),
                 SliverToBoxAdapter(
-                  child: SectionHeader(title: AppStrings.latestNews),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          AppStrings.latestNews,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        // Viral-sort toggle
+                        Consumer<NewsProvider>(
+                          builder: (_, p, __) => TextButton.icon(
+                            onPressed: p.toggleViralSort,
+                            icon: Text(
+                              '🔥',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: p.viralSort
+                                    ? Colors.deepOrange
+                                    : Colors.grey,
+                              ),
+                            ),
+                            label: Text(
+                              p.viralSort ? 'Viral' : 'Latest',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: p.viralSort
+                                    ? Colors.deepOrange
+                                    : Colors.grey,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              minimumSize: Size.zero,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              tapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: 10)),
 
