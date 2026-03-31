@@ -26,6 +26,7 @@ header('Content-Type: application/json');
 header('X-Content-Type-Options: nosniff');
 
 require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/viral_score.php';
 
 /* ── Read + validate input ─────────────────────────────────────────── */
 $raw   = file_get_contents('php://input');

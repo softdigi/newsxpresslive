@@ -8,6 +8,7 @@
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/subscription.php';
+require_once __DIR__ . '/../includes/viral_score.php';
 
 // Validate slug param
 $slug = getParam('slug');
@@ -60,6 +61,9 @@ try {
         }
     }
 }
+
+/* ── Update viral score (non-blocking; runs after view is persisted) ── */
+updateViralScore($pdo, (int)$news['id']);
 
 /* ── Get article tags ───────────────────────────────────────────────── */
 $articleTags = [];

@@ -365,3 +365,30 @@ INSERT IGNORE INTO settings (setting_key, setting_value) VALUES
     ('referral_max_levels',          '3'),
     ('referral_level2_pct',          '50'),   -- level-2 earns 50% of level-1 points
     ('referral_level3_pct',          '25');   -- level-3 earns 25% of level-1 points
+
+-- ============================================================
+-- Viral Score System
+-- ============================================================
+
+-- Computed viral score stored on news row for fast ORDER BY
+ALTER TABLE news ADD COLUMN IF NOT EXISTS viral_score   FLOAT        NOT NULL DEFAULT 0;
+-- Share count tracked separately (views already exist)
+ALTER TABLE news ADD COLUMN IF NOT EXISTS shares_count  INT UNSIGNED NOT NULL DEFAULT 0;
+-- Flag set automatically when viral_score exceeds threshold
+ALTER TABLE news ADD COLUMN IF NOT EXISTS is_trending   TINYINT(1)   NOT NULL DEFAULT 0;
+-- Timestamp of the last viral score recalculation
+ALTER TABLE news ADD COLUMN IF NOT EXISTS viral_score_updated_at DATETIME DEFAULT NULL;
+
+-- Index for feed-boost queries (published + score)
+CREATE INDEX IF NOT EXISTS idx_news_viral    ON news (status, viral_score);
+CREATE INDEX IF NOT EXISTS idx_news_trending ON news (status, is_trending);
+
+-- Configurable viral-score weights and trending threshold (admin-editable)
+INSERT IGNORE INTO settings (setting_key, setting_value) VALUES
+    ('viral_weight_view',      '1.0'),   -- points per view
+    ('viral_weight_share',     '3.0'),   -- points per share (higher value = social reach)
+    ('viral_weight_comment',   '2.0'),   -- points per approved comment
+    ('viral_weight_watch_min', '1.5'),   -- points per minute of watch/read time
+    ('viral_trending_threshold', '50'),  -- min score to auto-mark as trending
+    ('viral_decay_hours',        '72'),  -- articles older than N hours lose 50% of score
+    ('viral_feed_boost_pct',     '20');  -- % of feed slots filled with top-viral articles
