@@ -426,3 +426,8 @@ CREATE TABLE IF NOT EXISTS fake_news_queue (
 
 -- Index for fast flagged-article queries
 CREATE INDEX IF NOT EXISTS idx_news_fake_verdict ON news (fake_verdict, fake_reviewed);
+
+-- AI News Generator: track AI-generated articles and the topic used
+ALTER TABLE news ADD COLUMN IF NOT EXISTS ai_generated TINYINT(1) NOT NULL DEFAULT 0;
+ALTER TABLE news ADD COLUMN IF NOT EXISTS ai_topic     VARCHAR(300) DEFAULT NULL COMMENT 'original topic/keyword used for AI generation';
+CREATE INDEX IF NOT EXISTS idx_news_ai_generated ON news (ai_generated);

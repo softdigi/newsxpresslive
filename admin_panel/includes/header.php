@@ -75,12 +75,14 @@ header('Content-Type: text/html; charset=UTF-8');
     <?php if (can(['editor','admin','super_admin'])): ?>
       <div class="nav-section">Content</div>
       <a href="/newsxpresslive_api/admin_panel/news/pending.php">📰 Pending News</a>
+      <a href="/newsxpresslive_api/admin_panel/news/ai_generate.php">✨ AI News Generator</a>
     <?php endif; ?>
 
     <?php if ($_SESSION['admin']['role'] === 'reporter'): ?>
       <div class="nav-section">Reporter</div>
       <a href="/newsxpresslive_api/admin_panel/reporters/dashboard.php">📝 My Dashboard</a>
       <a href="/newsxpresslive_api/admin_panel/news/my_news.php">📰 My News</a>
+      <a href="/newsxpresslive_api/admin_panel/news/ai_generate.php">✨ AI News Generator</a>
     <?php endif; ?>
 
     <div class="nav-section">System</div>
