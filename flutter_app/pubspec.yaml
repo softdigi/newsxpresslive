@@ -67,6 +67,9 @@ dependencies:
   # ── Notifications (foreground) ────────────────────────────────────────
   flutter_local_notifications: ^18.0.1
 
+  # ── Text-to-Speech ────────────────────────────────────────────────────
+  flutter_tts: ^4.0.2
+
   # ── Deep linking ──────────────────────────────────────────────────────
   app_links: ^6.3.2
 

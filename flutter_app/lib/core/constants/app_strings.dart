@@ -124,5 +124,16 @@ class AppStrings {
   static const String offlineRemove        = 'Remove offline copy';
   static const String offlineSavedSnack    = 'Article saved for offline reading';
   static const String offlineRemovedSnack  = 'Offline copy removed';
+
+  // ── Text-to-Speech ────────────────────────────────────────────────────
+  static const String ttsListen    = 'Listen';
+  static const String ttsListening = 'Listening…';
+  static const String ttsLoading   = 'Starting…';
+  static const String ttsPlaying   = 'Playing';
+  static const String ttsPaused    = 'Paused';
+  static const String ttsPause     = 'Pause';
+  static const String ttsResume    = 'Resume';
+  static const String ttsStop      = 'Stop';
+  static const String ttsSpeed     = 'Playback speed';
 }
 
