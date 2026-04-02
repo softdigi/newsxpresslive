@@ -19,8 +19,15 @@
 // Agar central config/database.php exist karta hai to use karo:
 if (file_exists(__DIR__ . '/../config/database.php')) {
     require_once __DIR__ . '/../config/database.php';
+    // FIX 3: Apply security headers for every API response.
+    require_once __DIR__ . '/../helpers/security_headers.php';
+    setSecurityHeaders();
     return; // $pdo already set
 }
+
+// FIX 3: Apply security headers for every API response.
+require_once __DIR__ . '/../helpers/security_headers.php';
+setSecurityHeaders();
 
 // Fallback — load from environment variables for security
 $host    = getenv('DB_HOST') ?: 'localhost';

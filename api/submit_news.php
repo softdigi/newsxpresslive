@@ -49,6 +49,13 @@ $districtId = $input['district_id'] ?? $user['district_id'];
 $metaTitle = $input['meta_title'] ?? $input['title'];
 $metaDesc  = $input['meta_description'] ?? substr($input['description'], 0, 150);
 
+// FIX 1: Flutter app sends moderation_flag when the reporter suspects the
+// content may need review (e.g. sensitive topic). The value is cast to
+// a strict tinyint 0/1 so that no unexpected value can reach the DB.
+// Migration (run once if column does not exist):
+//   ALTER TABLE news ADD COLUMN moderation_flag TINYINT(1) NOT NULL DEFAULT 0;
+$moderationFlag = empty($input['moderation_flag']) ? 0 : 1;
+
 /* Slug generate (simple & safe) */
 $slugBase = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $input['title'])));
 $slug = $slugBase . "-" . time();
@@ -69,10 +76,11 @@ $stmt = $pdo->prepare(
         status,
         meta_title,
         meta_description,
+        moderation_flag,
         created_at
     )
     VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, NOW())"
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, NOW())"
 );
 
 $stmt->execute([
@@ -86,7 +94,8 @@ $stmt->execute([
     $districtId,
     $user['id'],
     $metaTitle,
-    $metaDesc
+    $metaDesc,
+    $moderationFlag,
 ]);
 
 $newsId = $pdo->lastInsertId();

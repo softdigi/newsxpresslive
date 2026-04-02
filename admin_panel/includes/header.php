@@ -6,6 +6,10 @@ if (!isset($_SESSION)) {
 require_once __DIR__.'/permissions.php';
 require_once __DIR__.'/config.php';
 
+// FIX 3: Apply security headers to every admin panel page.
+require_once __DIR__ . '/../../helpers/security_headers.php';
+setSecurityHeaders();
+
 header('Content-Type: text/html; charset=UTF-8');
 ?>
 <!DOCTYPE html>
