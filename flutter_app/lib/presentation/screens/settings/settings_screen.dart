@@ -57,6 +57,18 @@ class SettingsScreen extends StatelessWidget {
               Icons.light_mode_rounded, AppStrings.themeLight),
           _themeRadio(context, theme, ThemeMode.dark,
               Icons.dark_mode_rounded, AppStrings.themeDark),
+          // ── Auto dark mode by time ─────────────────────────────────
+          SwitchListTile(
+            secondary: Icon(
+              Icons.schedule_rounded,
+              color: theme.isAutoByTime ? AppColors.primary : null,
+            ),
+            title: const Text('Auto Dark Mode (Time-based)'),
+            subtitle: const Text('Dark 8 PM – 7 AM, Light otherwise'),
+            value: theme.isAutoByTime,
+            activeColor: AppColors.primary,
+            onChanged: (v) => theme.setAutoByTime(v),
+          ),
 
           const Divider(),
 

@@ -73,6 +73,9 @@ dependencies:
   # ── Deep linking ──────────────────────────────────────────────────────
   app_links: ^6.3.2
 
+  # ── Lottie animations ─────────────────────────────────────────────────
+  lottie: ^3.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

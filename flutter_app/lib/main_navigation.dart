@@ -43,9 +43,31 @@ class MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+      body: GestureDetector(
+        // Horizontal swipe to switch tabs.
+        // A drag is counted as a tab-switch when it travels more than 50 px
+        // horizontally while remaining mostly horizontal (horizontal component
+        // must be at least twice the vertical component).
+        onHorizontalDragEnd: (details) {
+          final vx = details.velocity.pixelsPerSecond.dx;
+          final vy = details.velocity.pixelsPerSecond.dy.abs();
+          if (vx.abs() < 200 || vy > vx.abs()) return; // too slow or too diagonal
+          if (vx < 0) {
+            // swipe left → next tab
+            if (_currentIndex < _screens.length - 1) {
+              setState(() => _currentIndex++);
+            }
+          } else {
+            // swipe right → previous tab
+            if (_currentIndex > 0) {
+              setState(() => _currentIndex--);
+            }
+          }
+        },
+        child: IndexedStack(
+          index: _currentIndex,
+          children: _screens,
+        ),
       ),
       bottomNavigationBar: Consumer2<BookmarkProvider, OfflineProvider>(
         builder: (context, bm, offline, _) => BottomNavigationBar(

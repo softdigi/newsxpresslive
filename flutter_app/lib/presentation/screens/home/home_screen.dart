@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import '../../providers/news_provider.dart';
 import '../widgets/news_card.dart';
@@ -10,6 +11,7 @@ import 'home/widgets/trending_section.dart';
 import 'home/widgets/section_header.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
+import '../../core/constants/lottie_assets.dart';
 import '../screens/detail/article_detail_screen.dart';
 import '../../main_navigation.dart';
 
@@ -295,7 +297,17 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.wifi_off_rounded, size: 52, color: Colors.grey),
+            Lottie.network(
+              LottieAssets.networkError,
+              width: 160,
+              height: 160,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.wifi_off_rounded,
+                size: 52,
+                color: Colors.grey,
+              ),
+            ),
             const SizedBox(height: 12),
             Text(
               prov.errorMsg.isNotEmpty

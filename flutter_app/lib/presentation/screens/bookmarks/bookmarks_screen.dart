@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/bookmark_provider.dart';
 import '../../widgets/news_card.dart';
 import '../detail/article_detail_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/constants/lottie_assets.dart';
 
 /// Bookmarks screen — shows locally saved articles.
 class BookmarksScreen extends StatelessWidget {
@@ -28,9 +30,13 @@ class BookmarksScreen extends StatelessWidget {
                 ),
             ],
           ),
-          body: bm.bookmarks.isEmpty
-              ? _buildEmpty(context)
-              : _buildList(context, bm),
+          body: RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () => bm.reload(),
+            child: bm.bookmarks.isEmpty
+                ? _buildEmpty(context)
+                : _buildList(context, bm),
+          ),
         );
       },
     );
@@ -39,26 +45,39 @@ class BookmarksScreen extends StatelessWidget {
   // ── Empty state ───────────────────────────────────────────────────────
 
   Widget _buildEmpty(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.bookmark_border_rounded,
-                size: 72, color: Colors.grey.shade300),
-            const SizedBox(height: 16),
-            Text(
-              AppStrings.noBookmarks,
-              textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: Colors.grey),
-            ),
-          ],
+    return ListView(
+      // ListView is required so RefreshIndicator works even when empty
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(
+          height: MediaQuery.of(context).size.height * 0.7,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Lottie.network(
+                LottieAssets.emptyBookmarks,
+                width: 180,
+                height: 180,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.bookmark_border_rounded,
+                  size: 72,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                AppStrings.noBookmarks,
+                textAlign: TextAlign.center,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: Colors.grey),
+              ),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -66,6 +85,7 @@ class BookmarksScreen extends StatelessWidget {
 
   Widget _buildList(BuildContext context, BookmarkProvider bm) {
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(12),
       itemCount: bm.bookmarks.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),

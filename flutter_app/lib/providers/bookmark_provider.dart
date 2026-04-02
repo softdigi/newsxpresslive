@@ -43,6 +43,14 @@ class BookmarkProvider extends ChangeNotifier {
     await _save();
   }
 
+  /// Re-reads bookmarks from SharedPreferences (used by pull-to-refresh).
+  Future<void> reload() async {
+    await _prefs.reload();
+    _bookmarks.clear();
+    _load();
+    notifyListeners();
+  }
+
   // ── Persistence ───────────────────────────────────────────────────────
 
   void _load() {

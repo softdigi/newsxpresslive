@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_strings.dart';
 import 'core/constants/app_colors.dart';
+import 'core/constants/lottie_assets.dart';
 import 'providers/news_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/bookmark_provider.dart';
@@ -113,9 +115,17 @@ class _SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
+        child: Lottie.network(
+          LottieAssets.loading,
+          width: 160,
+          height: 160,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => const CircularProgressIndicator(
+            color: AppColors.primary,
+          ),
+        ),
       ),
     );
   }

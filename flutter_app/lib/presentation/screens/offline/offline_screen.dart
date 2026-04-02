@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/offline_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/constants/lottie_assets.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../widgets/news_card.dart';
 import '../detail/article_detail_screen.dart';
@@ -51,9 +53,13 @@ class OfflineScreen extends StatelessWidget {
                 ),
             ],
           ),
-          body: offline.entries.isEmpty
-              ? _buildEmpty(context)
-              : _buildList(context, offline),
+          body: RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () => offline.sync(),
+            child: offline.entries.isEmpty
+                ? _buildEmpty(context)
+                : _buildList(context, offline),
+          ),
         );
       },
     );
@@ -62,35 +68,48 @@ class OfflineScreen extends StatelessWidget {
   // ── Empty state ───────────────────────────────────────────────────────
 
   Widget _buildEmpty(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.download_for_offline_outlined,
-                size: 72, color: Colors.grey.shade300),
-            const SizedBox(height: 16),
-            Text(
-              AppStrings.noOfflineArticles,
-              textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: Colors.grey),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              AppStrings.offlineHint,
-              textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: Colors.grey.shade400),
-            ),
-          ],
+    return ListView(
+      // ListView lets RefreshIndicator work when there are no items
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(
+          height: MediaQuery.of(context).size.height * 0.7,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Lottie.network(
+                LottieAssets.emptyOffline,
+                width: 180,
+                height: 180,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Icon(
+                  Icons.download_for_offline_outlined,
+                  size: 72,
+                  color: Colors.grey.shade300,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                AppStrings.noOfflineArticles,
+                textAlign: TextAlign.center,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: Colors.grey),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                AppStrings.offlineHint,
+                textAlign: TextAlign.center,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Colors.grey.shade400),
+              ),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -105,6 +124,7 @@ class OfflineScreen extends StatelessWidget {
         // List
         Expanded(
           child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(12),
             itemCount: offline.entries.length,
             separatorBuilder: (_, __) => const SizedBox(height: 8),
