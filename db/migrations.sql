@@ -431,3 +431,77 @@ CREATE INDEX IF NOT EXISTS idx_news_fake_verdict ON news (fake_verdict, fake_rev
 ALTER TABLE news ADD COLUMN IF NOT EXISTS ai_generated TINYINT(1) NOT NULL DEFAULT 0;
 ALTER TABLE news ADD COLUMN IF NOT EXISTS ai_topic     VARCHAR(300) DEFAULT NULL COMMENT 'original topic/keyword used for AI generation';
 CREATE INDEX IF NOT EXISTS idx_news_ai_generated ON news (ai_generated);
+
+-- ============================================================
+-- Click Heatmap  (records where users click on article pages)
+-- x_pct / y_pct are 0-100 percentage values relative to the
+-- rendered page width / height at the moment of the click.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS click_heatmap (
+    id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    news_id    INT     NOT NULL,
+    x_pct      TINYINT UNSIGNED NOT NULL COMMENT '0-100 % of page width',
+    y_pct      TINYINT UNSIGNED NOT NULL COMMENT '0-100 % of page height',
+    session_id VARCHAR(64) NOT NULL COMMENT 'SHA-256(IP+UA) anonymous',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_news_created (news_id, created_at),
+    INDEX idx_session       (session_id),
+    CONSTRAINT fk_hm_news FOREIGN KEY (news_id) REFERENCES news(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- A/B Headline Testing
+-- Each test belongs to one news article and defines two title
+-- variants. The system randomly shows variant_a or variant_b
+-- to each session and tracks impressions + clicks.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS ab_tests (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    news_id     INT NOT NULL,
+    title_a     VARCHAR(500) NOT NULL,
+    title_b     VARCHAR(500) NOT NULL,
+    status      ENUM('running','paused','concluded') NOT NULL DEFAULT 'running',
+    winner      ENUM('a','b') DEFAULT NULL,
+    created_by  INT DEFAULT NULL COMMENT 'admin_users.id',
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    concluded_at DATETIME DEFAULT NULL,
+    INDEX idx_news   (news_id),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Per-event log for A/B tests (impression or click, which variant)
+CREATE TABLE IF NOT EXISTS ab_test_events (
+    id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    test_id    INT NOT NULL,
+    variant    ENUM('a','b') NOT NULL,
+    event_type ENUM('impression','click') NOT NULL,
+    session_id VARCHAR(64) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_test_variant (test_id, variant),
+    INDEX idx_test_event   (test_id, event_type),
+    INDEX idx_session       (session_id),
+    CONSTRAINT fk_ab_test FOREIGN KEY (test_id) REFERENCES ab_tests(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- Ad Revenue Tracking
+-- Manual daily entry of ad revenue (admins enter figures from
+-- AdSense / ad network dashboards).  impressions + earnings
+-- for the day; broken down by source for revenue mix charts.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS ad_revenue (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    revenue_date DATE NOT NULL,
+    source      VARCHAR(60) NOT NULL DEFAULT 'adsense'
+                    COMMENT 'adsense | direct | affiliate | other',
+    impressions INT UNSIGNED NOT NULL DEFAULT 0,
+    clicks      INT UNSIGNED NOT NULL DEFAULT 0,
+    earnings    DECIMAL(10,4) NOT NULL DEFAULT 0,
+    currency    CHAR(3) NOT NULL DEFAULT 'USD',
+    notes       VARCHAR(255) DEFAULT NULL,
+    created_by  INT DEFAULT NULL,
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_date_source (revenue_date, source),
+    INDEX idx_date (revenue_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

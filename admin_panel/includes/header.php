@@ -93,6 +93,20 @@ header('Content-Type: text/html; charset=UTF-8');
     <?php if (can(['admin','super_admin'])): ?>
     <a href="/newsxpresslive_api/admin_panel/settings/ads.php">📢 Ad Manager</a>
     <?php endif; ?>
+
+    <?php if (can(['admin','super_admin','editor'])): ?>
+    <div class="nav-section">Analytics</div>
+    <a href="/newsxpresslive_api/admin_panel/analytics/overview.php">📊 Overview</a>
+    <a href="/newsxpresslive_api/admin_panel/analytics/heatmap.php">🖱️ Click Heatmap</a>
+    <a href="/newsxpresslive_api/admin_panel/analytics/ab_tests.php">🧪 A/B Tests</a>
+    <?php if (can(['admin','super_admin'])): ?>
+    <a href="/newsxpresslive_api/admin_panel/analytics/revenue.php">💰 Revenue</a>
+    <?php endif; ?>
+    <a href="/newsxpresslive_api/admin_panel/analytics/traffic.php">📈 Traffic</a>
+    <a href="/newsxpresslive_api/admin_panel/analytics/engagement.php">🤝 Engagement</a>
+    <a href="/newsxpresslive_api/admin_panel/analytics/top_content.php">⭐ Top Content</a>
+    <?php endif; ?>
+
     <a href="/newsxpresslive_api/admin_panel/logout.php">🚪 Logout</a>
 
   </nav>
