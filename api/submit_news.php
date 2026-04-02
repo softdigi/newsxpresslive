@@ -15,7 +15,6 @@ $input = json_decode(file_get_contents("php://input"), true);
 
 /* Required fields */
 $required = [
-    'firebase_uid',
     'title',
     'description',
     'category_id',
@@ -28,7 +27,18 @@ foreach ($required as $field) {
     }
 }
 
-$user = requireAppUser($pdo, '', $input['firebase_uid'] ?? '');
+// FIX 1 (caller update): Switched from firebase_uid body param to
+// verified Firebase ID token. Token is read from the Authorization header
+// (preferred) or from the JSON body's 'id_token' field.
+$id_token    = '';
+$auth_header = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+if (str_starts_with($auth_header, 'Bearer ')) {
+    $id_token = substr($auth_header, 7);
+}
+if (empty($id_token)) {
+    $id_token = $input['id_token'] ?? '';
+}
+$user = requireAppUser($pdo, $id_token);
 
 /* Location fallback (user profile based) */
 $countryId  = $input['country_id']  ?? $user['country_id'];

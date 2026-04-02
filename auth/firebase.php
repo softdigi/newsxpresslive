@@ -120,31 +120,28 @@ function getFirebasePublicKeys(): array|false
 
 /**
  * Require an authenticated app user.
- * Accepts id_token (preferred) or firebase_uid (legacy fallback).
+ * Only accepts a verified Firebase ID Token (JWT signed by Google).
+ * The legacy firebase_uid fallback has been removed — passing a raw UID
+ * without a signed token allowed impersonation of any user whose UID was
+ * known. All app versions must now send id_token.
  *
  * @param  PDO    $pdo
- * @param  string $id_token     Firebase ID token (JWT) — preferred
- * @param  string $firebase_uid Firebase UID — legacy, less secure
+ * @param  string $id_token  Firebase ID token (JWT) from the client
  * @return array  User row from DB
- * Exits with 401 JSON if not authenticated.
+ * Exits with 401 JSON if the token is absent, invalid, or expired.
  */
-function requireAppUser(PDO $pdo, string $id_token = '', string $firebase_uid = ''): array
+function requireAppUser(PDO $pdo, string $id_token = ''): array
 {
     $verified_uid = null;
 
-    // Prefer ID token verification
+    // FIX 1: Only accept a cryptographically verified Firebase ID token.
+    // The legacy firebase_uid body-parameter fallback has been removed
+    // because it allowed anyone who knew a valid UID to impersonate that
+    // user without a signed token.
     if (!empty($id_token)) {
         $payload = verifyFirebaseToken($id_token);
         if ($payload) {
             $verified_uid = $payload['sub'] ?? $payload['uid'] ?? null;
-        }
-    }
-
-    // Legacy fallback: trust firebase_uid from body (weaker)
-    // TODO: remove this once all app versions send id_token
-    if (!$verified_uid && !empty($firebase_uid)) {
-        if (preg_match('/^[a-zA-Z0-9_-]{20,128}$/', $firebase_uid)) {
-            $verified_uid = $firebase_uid;
         }
     }
 

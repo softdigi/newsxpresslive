@@ -11,11 +11,23 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $input = json_decode(file_get_contents("php://input"), true);
 
-if (empty($input['firebase_uid']) || empty($input['languages'])) {
-    jsonResponse(false, [], "firebase_uid & languages required");
+// FIX 1 (caller update): Switched from firebase_uid body param to
+// verified Firebase ID token. Token is read from the Authorization header
+// (preferred) or from the JSON body's 'id_token' field.
+$id_token    = '';
+$auth_header = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+if (str_starts_with($auth_header, 'Bearer ')) {
+    $id_token = substr($auth_header, 7);
+}
+if (empty($id_token)) {
+    $id_token = $input['id_token'] ?? '';
 }
 
-$user = requireAppUser($pdo, '', $input['firebase_uid'] ?? '');
+if (empty($id_token) || empty($input['languages'])) {
+    jsonResponse(false, [], "Authorization token & languages required");
+}
+
+$user = requireAppUser($pdo, $id_token);
 
 $userId = $user['id'];
 
