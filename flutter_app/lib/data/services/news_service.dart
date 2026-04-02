@@ -4,6 +4,26 @@ import '../models/comment.dart';
 import '../services/api_service.dart';
 import '../../core/constants/api_endpoints.dart';
 
+/// Result type for cursor-based feed pagination.
+class NewsPage {
+  const NewsPage({
+    required this.articles,
+    required this.hasMore,
+    this.nextLastId,
+    this.nextLastCreatedAt,
+  });
+
+  factory NewsPage.empty() => const NewsPage(articles: [], hasMore: false);
+
+  final List<NewsArticle> articles;
+  final bool              hasMore;
+
+  /// Cursor values to pass as [lastId] / [lastCreatedAt] on the next page
+  /// request.  Both are null when [hasMore] is false.
+  final int?    nextLastId;
+  final String? nextLastCreatedAt;
+}
+
 /// High-level service methods for news-related API calls.
 class NewsService {
   NewsService({required ApiService api}) : _api = api;
@@ -16,6 +36,41 @@ class NewsService {
   /// Pass [categorySlug] to filter by category.
   /// Pass [sort] = `'viral'` to enable feed-boost mode (viral articles
   /// injected at the configurable boost percentage).
+  ///
+  /// For cursor-based (keyset) pagination pass [lastId] and
+  /// [lastCreatedAt] from the previous page's response.  Omit both on the
+  /// first page.  The response exposes [NewsPage.nextLastId] and
+  /// [NewsPage.nextLastCreatedAt] which the caller should forward on the
+  /// next call.
+  Future<NewsPage> getNewsPage({
+    String? categorySlug,
+    String? sort,
+    int?    lastId,
+    String? lastCreatedAt,
+  }) async {
+    final params = <String, String>{
+      if (categorySlug != null) 'category': categorySlug,
+      if (sort != null && sort.isNotEmpty) 'sort': sort,
+      if (lastId        != null) 'last_id': lastId.toString(),
+      if (lastCreatedAt != null) 'last_created_at': lastCreatedAt,
+    };
+    final data = await _api.get(ApiEndpoints.newsList, queryParams: params);
+    if (data is! Map<String, dynamic>) return NewsPage.empty();
+    final list = data['news'];
+    final articles = list is List
+        ? list
+            .map((e) => NewsArticle.fromJson(e as Map<String, dynamic>))
+            .toList()
+        : <NewsArticle>[];
+    return NewsPage(
+      articles:        articles,
+      hasMore:         data['has_more'] == true,
+      nextLastId:      data['next_last_id'] as int?,
+      nextLastCreatedAt: data['next_last_created_at'] as String?,
+    );
+  }
+
+  /// Legacy offset-based list method kept for non-feed callers (search, etc.).
   Future<List<NewsArticle>> getNewsList({
     int page = 1,
     int perPage = 10,

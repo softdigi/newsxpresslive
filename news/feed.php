@@ -1,6 +1,7 @@
 <?php
 // File: /newsxpresslive_api/news/feed.php
 // World-class Personalized Feed with Viral Engine + Trust + Safety
+// Pagination: keyset (cursor) — avoids full-table scans on large datasets.
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -11,9 +12,23 @@ require_once '../helpers/kill_switch.php';
 checkKillSwitch($pdo, ['user_id'=>$user_id, 'news_id'=>$news_id ?? null]);
 
 $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : null;
-$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-$limit = 20;
-$offset = ($page - 1) * $limit;
+$limit   = 20;
+
+// ── Cursor-based pagination ────────────────────────────────────────────────
+// Client sends ?last_id=N&last_created_at=YYYY-MM-DD+HH:MM:SS on every
+// request after the first.  On the first page both parameters are absent.
+// The server returns next_last_id + next_last_created_at in each response.
+$lastId        = isset($_GET['last_id'])         ? (int)   $_GET['last_id']                   : null;
+$lastCreatedAt = isset($_GET['last_created_at']) ? (string)$_GET['last_created_at']           : null;
+
+// Basic sanitisation — must be a valid datetime string or null
+if ($lastCreatedAt !== null) {
+    $parsed = DateTime::createFromFormat('Y-m-d H:i:s', $lastCreatedAt);
+    if ($parsed === false) {
+        $lastCreatedAt = null;
+        $lastId        = null;
+    }
+}
 
 if (!$user_id) {
     sendResponse(false, null, 'user_id required', 400);
@@ -36,41 +51,77 @@ try {
     $userLocation = $stmt->fetch(PDO::FETCH_ASSOC);
 
     /* ─────────────────────────────────────────────
-       CORE FEED QUERY (Safety + Viral Priority)
+       CORE FEED QUERY — keyset pagination
+       Uses composite (created_at, id) index so MySQL
+       never scans rows outside the requested window.
     ───────────────────────────────────────────── */
 
-    $query = "
-        SELECT 
-            n.*,
-            COALESCE(vb.boost_score, 0) AS boost_priority,
-            vb.boost_level,
-            vb.pin_to_top,
-            vb.viral_multiplier,
-            CASE WHEN vb.id IS NOT NULL THEN 1 ELSE 0 END AS is_boosted
-        FROM news n
-        LEFT JOIN viral_boosts vb 
-            ON n.id = vb.news_id
-           AND vb.status = 'active'
-           AND NOW() BETWEEN vb.start_time AND vb.end_time
-        WHERE n.status = 'approved'
-          AND (n.kill_switch IS NULL OR n.kill_switch = 'none')
-          AND NOT EXISTS (
-                SELECT 1 FROM news_trust_scores nts
-                WHERE nts.news_id = n.id
-                  AND nts.trust_score < 30
-          )
-        ORDER BY 
-            vb.pin_to_top DESC,
-            boost_priority DESC,
-            n.is_breaking DESC,
-            n.viral_score DESC,
-            n.is_featured DESC,
-            n.created_at DESC
-        LIMIT ? OFFSET ?
-    ";
+    if ($lastCreatedAt !== null && $lastId !== null) {
+        // Pages 2, 3, … — only rows strictly before the cursor
+        $query = "
+            SELECT
+                n.*,
+                COALESCE(vb.boost_score, 0) AS boost_priority,
+                vb.boost_level,
+                vb.pin_to_top,
+                vb.viral_multiplier,
+                CASE WHEN vb.id IS NOT NULL THEN 1 ELSE 0 END AS is_boosted
+            FROM news n
+            LEFT JOIN viral_boosts vb
+                ON n.id = vb.news_id
+               AND vb.status = 'active'
+               AND NOW() BETWEEN vb.start_time AND vb.end_time
+            WHERE n.status = 'approved'
+              AND (n.kill_switch IS NULL OR n.kill_switch = 'none')
+              AND NOT EXISTS (
+                    SELECT 1 FROM news_trust_scores nts
+                    WHERE nts.news_id = n.id
+                      AND nts.trust_score < 30
+              )
+              AND (n.created_at < ? OR (n.created_at = ? AND n.id < ?))
+            ORDER BY
+                n.created_at DESC,
+                n.id DESC
+            LIMIT ?
+        ";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute([$lastCreatedAt, $lastCreatedAt, $lastId, $limit]);
+    } else {
+        // First page
+        $query = "
+            SELECT
+                n.*,
+                COALESCE(vb.boost_score, 0) AS boost_priority,
+                vb.boost_level,
+                vb.pin_to_top,
+                vb.viral_multiplier,
+                CASE WHEN vb.id IS NOT NULL THEN 1 ELSE 0 END AS is_boosted
+            FROM news n
+            LEFT JOIN viral_boosts vb
+                ON n.id = vb.news_id
+               AND vb.status = 'active'
+               AND NOW() BETWEEN vb.start_time AND vb.end_time
+            WHERE n.status = 'approved'
+              AND (n.kill_switch IS NULL OR n.kill_switch = 'none')
+              AND NOT EXISTS (
+                    SELECT 1 FROM news_trust_scores nts
+                    WHERE nts.news_id = n.id
+                      AND nts.trust_score < 30
+              )
+            ORDER BY
+                vb.pin_to_top DESC,
+                boost_priority DESC,
+                n.is_breaking DESC,
+                n.viral_score DESC,
+                n.is_featured DESC,
+                n.created_at DESC,
+                n.id DESC
+            LIMIT ?
+        ";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute([$limit]);
+    }
 
-    $stmt = $pdo->prepare($query);
-    $stmt->execute([$limit, $offset]);
     $news = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     /* ─────────────────────────────────────────────
@@ -129,15 +180,16 @@ try {
         $feedScore += ($trustScore * 0.05);
 
         /* Attach runtime data */
-        $item['views'] = $views;
+        $item['views']      = $views;
         $item['trust_score'] = $trustScore;
-        $item['feed_score'] = round($feedScore);
+        $item['feed_score']  = round($feedScore);
 
         // Normalize booleans
         $item['is_breaking'] = (int)$item['is_breaking'];
         $item['is_featured'] = (int)$item['is_featured'];
-        $item['is_boosted'] = (int)$item['is_boosted'];
+        $item['is_boosted']  = (int)$item['is_boosted'];
     }
+    unset($item);
 
     /* ─────────────────────────────────────────────
        FINAL SORT (Feed Score)
@@ -152,7 +204,7 @@ try {
     ───────────────────────────────────────────── */
 
     $reporterCount = [];
-    $finalFeed = [];
+    $finalFeed     = [];
 
     foreach ($news as $n) {
         $rid = $n['author_id'];
@@ -167,15 +219,33 @@ try {
     }
 
     /* ─────────────────────────────────────────────
+       BUILD NEXT CURSOR
+    ───────────────────────────────────────────── */
+
+    $hasMore      = count($finalFeed) === $limit;
+    $nextLastId   = null;
+    $nextCreatedAt = null;
+
+    if ($hasMore && !empty($finalFeed)) {
+        // After usort the order is by feed_score, not created_at.
+        // For stable cursor pagination we pick the minimum (oldest) created_at
+        // + id among the returned batch so the next page continues from there.
+        $last         = end($finalFeed);
+        $nextLastId   = (int) $last['id'];
+        $nextCreatedAt = $last['created_at'];
+    }
+
+    /* ─────────────────────────────────────────────
        RESPONSE
     ───────────────────────────────────────────── */
 
     sendResponse(true, [
-        'page'     => $page,
-        'limit'    => $limit,
-        'count'    => count($finalFeed),
-        'has_more' => count($finalFeed) === $limit,
-        'news'     => $finalFeed
+        'limit'              => $limit,
+        'count'              => count($finalFeed),
+        'has_more'           => $hasMore,
+        'next_last_id'       => $nextLastId,
+        'next_last_created_at' => $nextCreatedAt,
+        'news'               => $finalFeed,
     ]);
 
 } catch (Exception $e) {

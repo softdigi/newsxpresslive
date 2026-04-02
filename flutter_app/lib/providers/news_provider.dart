@@ -27,11 +27,16 @@ class NewsProvider extends ChangeNotifier {
   Category?      get selectedCat  => _selectedCat;
 
   // ── News feed ─────────────────────────────────────────────────────────
-  final List<NewsArticle> _articles    = [];
-  LoadState               _loadState   = LoadState.idle;
-  String                  _errorMsg    = '';
-  int                     _currentPage = 1;
-  bool                    _hasMore     = true;
+  final List<NewsArticle> _articles  = [];
+  LoadState               _loadState = LoadState.idle;
+  String                  _errorMsg  = '';
+  bool                    _hasMore   = true;
+
+  // Cursor state — replaces the old _currentPage / offset approach.
+  // On the first page both are null; on subsequent pages they hold the
+  // values returned by the previous response.
+  int?    _lastId;
+  String? _lastCreatedAt;
 
   /// When true the feed is fetched in viral-boost mode (?sort=viral).
   bool _viralSort = false;
@@ -108,8 +113,9 @@ class NewsProvider extends ChangeNotifier {
     if (_loadState == LoadState.loading) return;
     if (reset) {
       _articles.clear();
-      _currentPage = 1;
-      _hasMore     = true;
+      _lastId        = null;
+      _lastCreatedAt = null;
+      _hasMore       = true;
     }
     if (!_hasMore) return;
 
@@ -118,23 +124,25 @@ class NewsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final items = await _service.getNewsList(
-        page:         _currentPage,
-        perPage:      10,
-        categorySlug: _selectedCat?.slug,
-        sort:         _viralSort ? 'viral' : null,
+      final page = await _service.getNewsPage(
+        categorySlug:  _selectedCat?.slug,
+        sort:          _viralSort ? 'viral' : null,
+        lastId:        _lastId,
+        lastCreatedAt: _lastCreatedAt,
       );
-      if (items.isEmpty) {
+      if (!page.hasMore || page.articles.isEmpty) {
         _hasMore = false;
       } else {
-        _articles.addAll(items);
-        _currentPage++;
-        // Cache page-1 feed for offline use
-        if (_currentPage == 2) {
-          CacheService.instance.saveFeed(
-            _articles.map((a) => a.toJson()).toList(),
-          );
-        }
+        // Advance cursor for the next call
+        _lastId        = page.nextLastId;
+        _lastCreatedAt = page.nextLastCreatedAt;
+      }
+      _articles.addAll(page.articles);
+      // Cache the first-page articles for offline use
+      if (reset && _articles.isNotEmpty) {
+        CacheService.instance.saveFeed(
+          _articles.map((a) => a.toJson()).toList(),
+        );
       }
       _loadState = LoadState.loaded;
     } on ApiException catch (e) {
