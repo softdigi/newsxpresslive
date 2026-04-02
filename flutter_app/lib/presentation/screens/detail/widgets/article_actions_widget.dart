@@ -33,63 +33,73 @@ class ArticleActionsWidget extends StatelessWidget {
         Consumer<TtsProvider>(
           builder: (_, tts, __) {
             final isThisArticle = tts.articleId == art.id;
-            return IconButton(
-              icon: Icon(
-                isThisArticle && tts.isActive
-                    ? Icons.headphones_rounded
-                    : Icons.headphones_outlined,
-                color: isThisArticle && tts.isActive
-                    ? AppColors.primary
-                    : null,
+            final isActive      = isThisArticle && tts.isActive;
+            return Semantics(
+              label:  isActive ? AppStrings.ttsStop : AppStrings.ttsListen,
+              button: true,
+              child: IconButton(
+                icon: Icon(
+                  isActive
+                      ? Icons.headphones_rounded
+                      : Icons.headphones_outlined,
+                  color: isActive ? AppColors.primary : null,
+                ),
+                tooltip: isActive ? AppStrings.ttsStop : AppStrings.ttsListen,
+                onPressed: () {
+                  if (isActive) {
+                    tts.stop();
+                  } else {
+                    tts.speak(
+                      articleId: art.id,
+                      title:     art.title,
+                      plainText: StringUtils.stripHtml(art.content),
+                    );
+                  }
+                },
               ),
-              tooltip: AppStrings.ttsListen,
-              onPressed: () {
-                if (isThisArticle && tts.isActive) {
-                  tts.stop();
-                } else {
-                  tts.speak(
-                    articleId: art.id,
-                    title:     art.title,
-                    plainText: StringUtils.stripHtml(art.content),
-                  );
-                }
-              },
             );
           },
         ),
 
         // ── Share ────────────────────────────────────────────────────────
-        IconButton(
-          icon:    const Icon(Icons.share_rounded),
-          tooltip: AppStrings.share,
-          onPressed: onShare,
+        Semantics(
+          label:  AppStrings.share,
+          button: true,
+          child: IconButton(
+            icon:    const Icon(Icons.share_rounded),
+            tooltip: AppStrings.share,
+            onPressed: onShare,
+          ),
         ),
 
         // ── Offline download toggle ──────────────────────────────────────
         Consumer<OfflineProvider>(
           builder: (_, offline, __) {
-            final saved = offline.isOffline(art.slug);
-            return IconButton(
-              icon: Icon(saved
-                  ? Icons.download_done_rounded
-                  : Icons.download_for_offline_outlined),
-              tooltip: saved
-                  ? AppStrings.offlineRemove
-                  : AppStrings.offlineDownload,
-              onPressed: () async {
-                HapticFeedback.lightImpact();
-                await offline.toggle(art);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(saved
-                          ? AppStrings.offlineRemovedSnack
-                          : AppStrings.offlineSavedSnack),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                }
-              },
+            final saved  = offline.isOffline(art.slug);
+            final label  = saved ? AppStrings.offlineRemove : AppStrings.offlineDownload;
+            return Semantics(
+              label:  label,
+              button: true,
+              child: IconButton(
+                icon: Icon(saved
+                    ? Icons.download_done_rounded
+                    : Icons.download_for_offline_outlined),
+                tooltip: label,
+                onPressed: () async {
+                  HapticFeedback.lightImpact();
+                  await offline.toggle(art);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(saved
+                            ? AppStrings.offlineRemovedSnack
+                            : AppStrings.offlineSavedSnack),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+              ),
             );
           },
         ),
@@ -98,22 +108,29 @@ class ArticleActionsWidget extends StatelessWidget {
         Consumer<BookmarkProvider>(
           builder: (_, bm, __) {
             final saved = bm.isBookmarked(art.id);
-            return IconButton(
-              icon: Icon(saved
-                  ? Icons.bookmark_rounded
-                  : Icons.bookmark_border_rounded),
-              tooltip: AppStrings.bookmark,
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                bm.toggle(art);
-                if (saved) {
-                  AnalyticsService.instance
-                      .logBookmarkRemove(art.id, art.slug);
-                } else {
-                  AnalyticsService.instance
-                      .logBookmarkAdd(art.id, art.slug);
-                }
-              },
+            final label = saved
+                ? AppStrings.bookmarkRemove
+                : AppStrings.bookmark;
+            return Semantics(
+              label:  label,
+              button: true,
+              child: IconButton(
+                icon: Icon(saved
+                    ? Icons.bookmark_rounded
+                    : Icons.bookmark_border_rounded),
+                tooltip: AppStrings.bookmark,
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  bm.toggle(art);
+                  if (saved) {
+                    AnalyticsService.instance
+                        .logBookmarkRemove(art.id, art.slug);
+                  } else {
+                    AnalyticsService.instance
+                        .logBookmarkAdd(art.id, art.slug);
+                  }
+                },
+              ),
             );
           },
         ),

@@ -22,7 +22,8 @@ class AppStrings {
   // ── Buttons ───────────────────────────────────────────────────────────
   static const String readMore    = 'Read More';
   static const String share       = 'Share';
-  static const String bookmark    = 'Bookmark';
+  static const String bookmark       = 'Bookmark';
+  static const String bookmarkRemove = 'Remove bookmark';
   static const String postComment = 'Post Comment';
   static const String retry       = 'Retry';
 

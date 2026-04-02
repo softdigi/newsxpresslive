@@ -6,6 +6,7 @@ import '../../../core/constants/app_strings.dart';
 import 'article_detail_controller.dart';
 import 'widgets/article_actions_widget.dart';
 import 'widgets/article_content_widget.dart';
+import 'widgets/article_detail_skeleton.dart';
 import 'widgets/comment_section_widget.dart';
 import 'widgets/comment_input_widget.dart';
 
@@ -32,10 +33,7 @@ class _ArticleDetailView extends StatelessWidget {
     final ctrl = context.watch<ArticleDetailController>();
 
     if (ctrl.loading) {
-      return const Scaffold(
-        body: Center(
-            child: CircularProgressIndicator(color: AppColors.primary)),
-      );
+      return const ArticleDetailSkeleton();
     }
 
     if (ctrl.error != null || ctrl.article == null) {
