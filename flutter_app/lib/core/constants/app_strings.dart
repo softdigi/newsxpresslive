@@ -109,6 +109,20 @@ class AppStrings {
   static const String agency            = 'Agency';
   static const String moreByReporter    = 'More by this Reporter';
 
+  // ── Smart Notifications ───────────────────────────────────────────────
+  static const String notifSectionTitle       = 'Notifications';
+  static const String notifInterestFilter     = 'Interest-based filtering';
+  static const String notifInterestFilterSub  = 'Only show notifications matching your categories';
+  static const String notifBreakingAlerts     = 'Personalised breaking alerts';
+  static const String notifBreakingAlertsSub  = 'Always show breaking news (bypasses category filter)';
+  static const String notifQuietHours         = 'Quiet hours';
+  static const String notifQuietHoursSub      = 'Suppress notifications during this window';
+  static const String notifBestTime           = 'Your most-active hours';
+  static const String notifBestTimeNone       = 'Open more articles to see your active hours';
+  static const String notifLast24h            = 'Notifications shown (last 24 h)';
+  static const String notifCategories         = 'Interest categories';
+  static const String notifCategoriesNone     = 'Complete onboarding to set categories';
+
   // ── Offline / cache ───────────────────────────────────────────────────
   static const String offlineBanner        = 'You\'re offline — showing cached content';
   static const String navOffline           = 'Offline';

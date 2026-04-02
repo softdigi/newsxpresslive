@@ -13,6 +13,7 @@ import 'providers/auth_provider.dart';
 import 'providers/onboarding_provider.dart';
 import 'providers/feature_flags_provider.dart';
 import 'providers/tts_provider.dart';
+import 'providers/notification_provider.dart';
 import 'main_navigation.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/onboarding/onboarding_screen.dart';
@@ -24,13 +25,15 @@ class NewsXpressApp extends StatelessWidget {
     required this.themeProvider,
     required this.bookmarkProvider,
     required this.offlineProvider,
+    required this.notificationProvider,
     required this.onboardingDone,
   });
 
-  final ThemeProvider    themeProvider;
-  final BookmarkProvider bookmarkProvider;
-  final OfflineProvider  offlineProvider;
-  final bool             onboardingDone;
+  final ThemeProvider        themeProvider;
+  final BookmarkProvider     bookmarkProvider;
+  final OfflineProvider      offlineProvider;
+  final NotificationProvider notificationProvider;
+  final bool                 onboardingDone;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +42,7 @@ class NewsXpressApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider.value(value: bookmarkProvider),
         ChangeNotifierProvider.value(value: offlineProvider),
+        ChangeNotifierProvider.value(value: notificationProvider),
         ChangeNotifierProvider(create: (_) => NewsProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => OnboardingProvider()),

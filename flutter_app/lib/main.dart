@@ -8,7 +8,9 @@ import 'app.dart';
 import 'providers/theme_provider.dart';
 import 'providers/bookmark_provider.dart';
 import 'providers/offline_provider.dart';
+import 'providers/notification_provider.dart';
 import 'data/services/notification_service.dart';
+import 'data/services/smart_notification_service.dart';
 import 'data/services/analytics_service.dart';
 import 'data/services/cache_service.dart';
 import 'data/services/offline_service.dart';
@@ -55,6 +57,7 @@ Future<void> main() async {
   AnalyticsService.instance.init();
 
   // ── FCM Push Notifications ─────────────────────────────────────────────
+  await SmartNotificationService.instance.init();
   await NotificationService.instance.init();
 
   // Navigate to article when notification is tapped
@@ -76,11 +79,15 @@ Future<void> main() async {
   // ── Feature flags (offline cache for cold start) ───────────────────────
   await FeatureFlagsService.instance.loadFromCache();
 
+  // Build the notification provider after SmartNotificationService is ready
+  final notificationProvider = NotificationProvider()..reload();
+
   final app = NewsXpressApp(
-    themeProvider:    ThemeProvider(prefs),
-    bookmarkProvider: BookmarkProvider(prefs),
-    offlineProvider:  OfflineProvider(),
-    onboardingDone:   onboardingDone,
+    themeProvider:        ThemeProvider(prefs),
+    bookmarkProvider:     BookmarkProvider(prefs),
+    offlineProvider:      OfflineProvider(),
+    notificationProvider: notificationProvider,
+    onboardingDone:       onboardingDone,
   );
 
   runApp(app);

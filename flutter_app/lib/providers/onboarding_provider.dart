@@ -6,6 +6,7 @@ import '../data/services/api_service.dart';
 import '../data/services/news_service.dart';
 import '../data/services/onboarding_service.dart';
 import '../data/services/notification_service.dart';
+import '../data/services/smart_notification_service.dart';
 
 enum OnboardingStep { location, languages, interests, done }
 enum OnboardingLoadState { idle, loading, saving, success, error }
@@ -216,6 +217,16 @@ class OnboardingProvider extends ChangeNotifier {
           firebaseUid: firebaseUid,
           categoryIds: _selectedCategoryIds,
         );
+
+        // Subscribe to FCM topics for each selected category and persist the
+        // category slugs for client-side interest filtering.
+        final selectedCats = _allCategories
+            .where((c) => _selectedCategoryIds.contains(c.id))
+            .toList();
+        final slugs = selectedCats.map((c) => c.slug).toList();
+
+        await NotificationService.instance.subscribeToCategoryTopics(slugs);
+        await SmartNotificationService.instance.setInterestCategories(slugs);
       }
 
       // Mark onboarding as done in SharedPreferences

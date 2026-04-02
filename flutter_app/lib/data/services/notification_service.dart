@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'smart_notification_service.dart';
 
 /// Top-level handler required by Firebase Messaging for background messages.
 @pragma('vm:entry-point')
@@ -125,11 +126,36 @@ class NotificationService {
     } catch (_) {}
   }
 
+  // ── Category topic subscriptions (interest-based) ─────────────────────
+
+  /// Subscribe to FCM topics for each selected interest category.
+  /// Uses the pattern `category_<slug>` so the backend can push notifications
+  /// targeted at specific content verticals.
+  Future<void> subscribeToCategoryTopics(List<String> categorySlugs) async {
+    try {
+      for (final slug in categorySlugs) {
+        if (slug.isNotEmpty) await _fcm.subscribeToTopic('category_$slug');
+      }
+    } catch (_) {}
+  }
+
+  /// Unsubscribe from previously subscribed category topics.
+  Future<void> unsubscribeFromCategoryTopics(List<String> categorySlugs) async {
+    try {
+      for (final slug in categorySlugs) {
+        if (slug.isNotEmpty) await _fcm.unsubscribeFromTopic('category_$slug');
+      }
+    } catch (_) {}
+  }
+
   // ── Handlers ──────────────────────────────────────────────────────────
 
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     final notification = message.notification;
     if (notification == null) return;
+
+    // Smart-notification gate: interest filter, quiet hours, frequency cap
+    if (!SmartNotificationService.instance.shouldShow(message)) return;
 
     await _localNotifications.show(
       notification.hashCode,
@@ -148,6 +174,9 @@ class NotificationService {
       ),
       payload: message.data['slug'] as String?,
     );
+
+    // Record that we showed this notification for frequency-cap tracking
+    await SmartNotificationService.instance.recordNotificationShown();
   }
 
   void _handleNotificationTap(RemoteMessage message) {

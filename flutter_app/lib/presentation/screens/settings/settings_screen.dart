@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/feature_flags_provider.dart';
+import '../../../providers/notification_provider.dart';
 import '../../../data/services/feature_flags_service.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
@@ -17,9 +18,10 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = context.watch<ThemeProvider>();
-    final auth  = context.watch<AuthProvider>();
-    final flags = context.watch<FeatureFlagsProvider>();
+    final theme  = context.watch<ThemeProvider>();
+    final auth   = context.watch<AuthProvider>();
+    final flags  = context.watch<FeatureFlagsProvider>();
+    final notif  = context.watch<NotificationProvider>();
 
     return Scaffold(
       appBar: AppBar(title: const Text(AppStrings.navSettings)),
@@ -46,6 +48,12 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ],
+
+          const Divider(),
+
+          // ── Notifications ────────────────────────────────────────────
+          _section(AppStrings.notifSectionTitle),
+          _NotificationSettingsSection(notif: notif),
 
           const Divider(),
 
@@ -278,3 +286,222 @@ class _AccountTile extends StatelessWidget {
     );
   }
 }
+
+// ── Notification settings section ────────────────────────────────────────────
+
+class _NotificationSettingsSection extends StatelessWidget {
+  const _NotificationSettingsSection({required this.notif});
+
+  final NotificationProvider notif;
+
+  @override
+  Widget build(BuildContext context) {
+    final bestHours = notif.bestHours;
+    final cats      = notif.interestCategories;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Interest filter ────────────────────────────────────────────
+        SwitchListTile(
+          secondary: Icon(
+            Icons.category_rounded,
+            color: notif.interestFilter ? AppColors.primary : null,
+          ),
+          title: const Text(AppStrings.notifInterestFilter),
+          subtitle: const Text(AppStrings.notifInterestFilterSub),
+          value: notif.interestFilter,
+          activeColor: AppColors.primary,
+          onChanged: (v) => notif.setInterestFilter(v),
+        ),
+
+        // ── Breaking alerts ────────────────────────────────────────────
+        SwitchListTile(
+          secondary: Icon(
+            Icons.notification_important_rounded,
+            color: notif.breakingAlerts ? AppColors.primary : null,
+          ),
+          title: const Text(AppStrings.notifBreakingAlerts),
+          subtitle: const Text(AppStrings.notifBreakingAlertsSub),
+          value: notif.breakingAlerts,
+          activeColor: AppColors.primary,
+          onChanged: (v) => notif.setBreakingAlerts(v),
+        ),
+
+        // ── Quiet hours ────────────────────────────────────────────────
+        ListTile(
+          leading: Icon(
+            Icons.bedtime_rounded,
+            color: AppColors.primary.withOpacity(0.8),
+          ),
+          title: const Text(AppStrings.notifQuietHours),
+          subtitle: Text(
+            notif.quietStart == notif.quietEnd
+                ? 'Disabled'
+                : '${_fmtHour(notif.quietStart)} – ${_fmtHour(notif.quietEnd)}',
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => _showQuietHoursPicker(context),
+        ),
+
+        // ── Frequency (read-only) ──────────────────────────────────────
+        ListTile(
+          leading: const Icon(Icons.notifications_active_outlined,
+              color: AppColors.primary),
+          title: const Text(AppStrings.notifLast24h),
+          trailing: Text(
+            '${notif.notificationsLast24h}',
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: AppColors.primary,
+            ),
+          ),
+        ),
+
+        // ── Best engagement hours ──────────────────────────────────────
+        ListTile(
+          leading: const Icon(Icons.access_time_rounded,
+              color: AppColors.primary),
+          title: const Text(AppStrings.notifBestTime),
+          subtitle: Text(
+            bestHours.isEmpty
+                ? AppStrings.notifBestTimeNone
+                : bestHours.map(_fmtHour).join('  •  '),
+          ),
+        ),
+
+        // ── Interest categories (read-only) ────────────────────────────
+        ListTile(
+          leading: const Icon(Icons.interests_rounded,
+              color: AppColors.primary),
+          title: const Text(AppStrings.notifCategories),
+          subtitle: Text(
+            cats.isEmpty
+                ? AppStrings.notifCategoriesNone
+                : cats.join(', '),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Quiet-hours bottom sheet ───────────────────────────────────────────
+
+  Future<void> _showQuietHoursPicker(BuildContext context) async {
+    int start = notif.quietStart;
+    int end   = notif.quietEnd;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppStrings.notifQuietHours,
+                style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Set equal values to disable quiet hours.',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 20),
+
+              // Start hour
+              _HourSlider(
+                label: 'Start',
+                value: start,
+                onChanged: (v) => setModalState(() => start = v),
+              ),
+              const SizedBox(height: 12),
+
+              // End hour
+              _HourSlider(
+                label: 'End',
+                value: end,
+                onChanged: (v) => setModalState(() => end = v),
+              ),
+              const SizedBox(height: 20),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    notif.setQuietHours(start, end);
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('Save'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _fmtHour(int h) {
+    final period = h < 12 ? 'AM' : 'PM';
+    final display = h == 0 ? 12 : (h > 12 ? h - 12 : h);
+    return '$display $period';
+  }
+}
+
+// ── Hour slider helper ────────────────────────────────────────────────────────
+
+class _HourSlider extends StatelessWidget {
+  const _HourSlider({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String        label;
+  final int           value;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final period  = value < 12 ? 'AM' : 'PM';
+    final display = value == 0 ? 12 : (value > 12 ? value - 12 : value);
+    return Row(
+      children: [
+        SizedBox(
+          width: 60,
+          child: Text(label,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
+        ),
+        Expanded(
+          child: Slider(
+            value:    value.toDouble(),
+            min:      0,
+            max:      23,
+            divisions: 23,
+            activeColor: AppColors.primary,
+            label: '$display $period',
+            onChanged: (v) => onChanged(v.round()),
+          ),
+        ),
+        SizedBox(
+          width: 52,
+          child: Text(
+            '$display $period',
+            style: const TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    );
+  }
+}
+

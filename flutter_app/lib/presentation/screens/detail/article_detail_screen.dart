@@ -11,6 +11,7 @@ import '../../../data/services/api_service.dart';
 import '../../../data/services/news_service.dart';
 import '../../../data/services/analytics_service.dart';
 import '../../../data/services/realtime_service.dart';
+import '../../../data/services/smart_notification_service.dart';
 import '../../../providers/bookmark_provider.dart';
 import '../../../providers/offline_provider.dart';
 import '../../../core/constants/app_colors.dart';
@@ -61,8 +62,9 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   void initState() {
     super.initState();
     _loadArticle();
-    // Track article open event
+    // Track article open event (Firebase Analytics + engagement hour)
     AnalyticsService.instance.logArticleOpen(0, widget.slug, null);
+    SmartNotificationService.instance.recordEngagement();
     // Report typing when user types in comment box
     _contentCtrl.addListener(_onContentChanged);
   }
