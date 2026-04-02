@@ -20,6 +20,8 @@ import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/string_utils.dart';
 import '../../widgets/reporter_profile_card.dart';
 import '../../widgets/ad_banner_widget.dart';
+import '../../widgets/tts_player_widget.dart';
+import '../../../providers/tts_provider.dart';
 
 /// Full article detail screen.
 class ArticleDetailScreen extends StatefulWidget {
@@ -247,6 +249,34 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                   )
                 : null,
             actions: [
+              // TTS Listen button
+              Consumer<TtsProvider>(
+                builder: (_, tts, __) {
+                  final isThisArticle = tts.articleId == art.id;
+                  return IconButton(
+                    icon: Icon(
+                      isThisArticle && tts.isActive
+                          ? Icons.headphones_rounded
+                          : Icons.headphones_outlined,
+                      color: isThisArticle && tts.isActive
+                          ? AppColors.primary
+                          : null,
+                    ),
+                    tooltip: AppStrings.ttsListen,
+                    onPressed: () {
+                      if (isThisArticle && tts.isActive) {
+                        tts.stop();
+                      } else {
+                        tts.speak(
+                          articleId: art.id,
+                          title:     art.title,
+                          plainText: StringUtils.stripHtml(art.content),
+                        );
+                      }
+                    },
+                  );
+                },
+              ),
               IconButton(
                 icon: const Icon(Icons.share_rounded),
                 tooltip: AppStrings.share,
@@ -344,6 +374,14 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                   ),
 
                   const Divider(height: 24),
+
+                  // TTS inline player (visible when this article is playing)
+                  Consumer<TtsProvider>(
+                    builder: (_, tts, __) =>
+                        tts.articleId == art.id
+                            ? const TtsPlayerWidget()
+                            : const SizedBox.shrink(),
+                  ),
 
                   // Article body (HTML)
                   Html(

@@ -10,6 +10,7 @@ import 'providers/offline_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/onboarding_provider.dart';
 import 'providers/feature_flags_provider.dart';
+import 'providers/tts_provider.dart';
 import 'main_navigation.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/onboarding/onboarding_screen.dart';
@@ -40,6 +41,7 @@ class NewsXpressApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => OnboardingProvider()),
         ChangeNotifierProvider(create: (_) => FeatureFlagsProvider()),
+        ChangeNotifierProvider(create: (_) => TtsProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, theme, child) => MaterialApp(
