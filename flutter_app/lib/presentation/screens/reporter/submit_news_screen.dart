@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../data/services/api_service.dart';
 import '../../../data/services/analytics_service.dart';
+import '../../../data/services/moderation_service.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/location_model.dart';
 import '../../../data/services/news_service.dart';
@@ -98,6 +99,16 @@ class _SubmitNewsScreenState extends State<SubmitNewsScreen> {
       return;
     }
 
+    // ── Moderation check ─────────────────────────────────────────────────
+    final modResult = ModerationService.instance.analyseSubmission(
+      title:       _titleCtrl.text.trim(),
+      description: _descCtrl.text.trim(),
+    );
+    if (modResult.isBlock) {
+      _showError(modResult.reason);
+      return;
+    }
+
     HapticFeedback.mediumImpact();
     setState(() { _submitting = true; _resultMsg = null; });
 
@@ -107,14 +118,17 @@ class _SubmitNewsScreenState extends State<SubmitNewsScreen> {
         idTokenProvider: () async => token,
       );
 
-      // Submit news metadata
-      final res = await api.postJson(ApiEndpoints.submitNews, body: {
+      // Submit news metadata (include optional moderation_flag for admin)
+      final body = <String, dynamic>{
         'firebase_uid': auth.user!.firebaseUid,
         'title':        _titleCtrl.text.trim(),
         'description':  _descCtrl.text.trim(),
         'category_id':  _selectedCategory!.id,
         'language_id':  _selectedLanguage!.id,
-      });
+        if (modResult.backendFlag != null)
+          'moderation_flag': modResult.backendFlag,
+      };
+      final res = await api.postJson(ApiEndpoints.submitNews, body: body);
 
       final newsId = res?['news_id'] as int?;
 
@@ -133,7 +147,9 @@ class _SubmitNewsScreenState extends State<SubmitNewsScreen> {
 
       setState(() {
         _success    = true;
-        _resultMsg  = AppStrings.newsPending;
+        _resultMsg  = modResult.isWarn
+            ? modResult.reason
+            : AppStrings.newsPending;
         _submitting = false;
       });
 

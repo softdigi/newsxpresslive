@@ -12,6 +12,7 @@ import '../../../data/services/news_service.dart';
 import '../../../data/services/analytics_service.dart';
 import '../../../data/services/realtime_service.dart';
 import '../../../data/services/smart_notification_service.dart';
+import '../../../data/services/moderation_service.dart';
 import '../../../providers/bookmark_provider.dart';
 import '../../../providers/offline_provider.dart';
 import '../../../core/constants/app_colors.dart';
@@ -143,6 +144,14 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
       setState(() => _commMsg = 'Name and comment are required.');
       return;
     }
+
+    // ── Moderation check ─────────────────────────────────────────────────
+    final modResult = ModerationService.instance.analyseComment(content);
+    if (modResult.isBlock) {
+      setState(() => _commMsg = modResult.reason);
+      return;
+    }
+
     setState(() { _submitting = true; _commMsg = ''; });
     // Clear typing indicator immediately on submit
     _rt.clearTyping(
@@ -156,7 +165,9 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
         content:     content,
         authorEmail: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
       );
-      _commMsg = res['message'] as String? ?? AppStrings.commentSubmitted;
+      _commMsg = modResult.isWarn
+          ? modResult.reason
+          : (res['message'] as String? ?? AppStrings.commentSubmitted);
       if (res['success'] == true) {
         _nameCtrl.clear();
         _emailCtrl.clear();

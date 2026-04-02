@@ -109,6 +109,10 @@ class AppStrings {
   static const String agency            = 'Agency';
   static const String moreByReporter    = 'More by this Reporter';
 
+  // ── Moderation ────────────────────────────────────────────────────────
+  static const String moderationBlocked   = 'Content blocked';
+  static const String moderationFlagged   = 'Content flagged for review';
+
   // ── Smart Notifications ───────────────────────────────────────────────
   static const String notifSectionTitle       = 'Notifications';
   static const String notifInterestFilter     = 'Interest-based filtering';
