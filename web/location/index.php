@@ -1,82 +1,128 @@
 <?php
-require_once __DIR__.'/../includes/config.php';
-require_once __DIR__.'/../includes/functions.php';
-require_once __DIR__.'/../includes/seo.php';
+/**
+ * Location News Page (slug-based)
+ * NewsXpressLive – List approved news for a location by state_slug or city_slug.
+ */
 
-$slug = $_GET['slug'] ?? '';
-if (!$slug) {
-    header("Location: ".SITE_URL);
+require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/functions.php';
+
+$slug = getParam('slug');
+if ($slug === '') {
+    header('Location: ' . SITE_URL . '/');
     exit;
 }
 
-// slug → location name
-$location_name = ucwords(str_replace('-', ' ', $slug));
+$locationName = htmlspecialchars(ucwords(str_replace('-', ' ', $slug)), ENT_QUOTES, 'UTF-8');
 
-// Fetch location-based news
-$stmt = $pdo->prepare("
-    SELECT n.*
-    FROM news n
-    WHERE n.status='approved'
-    AND (n.state_slug = :slug OR n.city_slug = :slug)
-    ORDER BY 
-      CASE WHEN n.is_viral_boosted=1 THEN 1 ELSE 2 END,
-      n.created_at DESC
-    LIMIT 30
-");
-$stmt->execute(['slug' => $slug]);
-$news_list = $stmt->fetchAll();
+// Fetch location-based news (gracefully handles missing slug columns)
+$newsList = [];
+try {
+    $stmt = $pdo->prepare(
+        "SELECT n.id, n.title, n.slug, n.featured_image, n.content, n.created_at,
+                n.views, c.name AS category_name, c.slug AS category_slug
+         FROM news n
+         LEFT JOIN categories c ON c.id = n.category_id
+         WHERE n.status = 'approved'
+           AND (n.state_slug = :slug OR n.city_slug = :slug)
+         ORDER BY n.created_at DESC
+         LIMIT 30"
+    );
+    $stmt->execute([':slug' => $slug]);
+    $newsList = $stmt->fetchAll();
+} catch (PDOException $e) {
+    // state_slug / city_slug columns may not exist in all deployments
+    $newsList = [];
+}
 
-// SEO
-$page_title = "$location_name News - Latest & Breaking Updates";
-$page_description = "Latest breaking news, viral updates and top stories from $location_name.";
-$canonical_url = SITE_URL."/newsxpresslive_api/web/location/".$slug;
+$seoMeta = [
+    'title'       => $locationName . ' News – Latest & Breaking Updates',
+    'description' => 'Latest breaking news, viral updates and top stories from ' . $locationName . '.',
+    'url'         => SITE_URL . '/location/?slug=' . urlencode($slug),
+];
 
-include __DIR__.'/../includes/header.php';
+require_once __DIR__ . '/../includes/header.php';
 ?>
 
-<div class="container">
+<div class="container page-body">
+<div class="layout-main">
 
-<nav class="breadcrumb">
-  <a href="<?= SITE_URL ?>">Home</a> ›
-  <span><?= htmlspecialchars($location_name) ?></span>
-</nav>
+    <section class="section" aria-labelledby="location-heading">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="<?= SITE_URL ?>/">Home</a>
+            &rsaquo; <span><?= $locationName ?></span>
+        </nav>
 
-<h1 class="page-title">📍 <?= htmlspecialchars($location_name) ?> News</h1>
+        <h1 class="section__title" id="location-heading">
+            📍 <span class="section__title-accent"><?= $locationName ?></span> News
+        </h1>
 
-<?php if (!$news_list): ?>
-  <p>No news available for this location.</p>
-<?php endif; ?>
+        <?php if (empty($newsList)): ?>
+        <p class="no-results">No news available for this location.</p>
+        <?php else: ?>
+        <div class="news-grid">
+            <?php foreach ($newsList as $news): ?>
+            <article class="news-card">
+                <a href="<?= htmlspecialchars(newsUrl($news['slug']), ENT_QUOTES, 'UTF-8') ?>"
+                   class="news-card__img-link">
+                    <img src="<?= htmlspecialchars(newsImage($news['featured_image']), ENT_QUOTES, 'UTF-8') ?>"
+                         alt="<?= htmlspecialchars($news['title'], ENT_QUOTES, 'UTF-8') ?>"
+                         class="news-card__img"
+                         loading="lazy">
+                </a>
+                <div class="news-card__body">
+                    <?php if (!empty($news['category_name'])): ?>
+                    <a href="<?= htmlspecialchars(categoryUrl($news['category_slug']), ENT_QUOTES, 'UTF-8') ?>"
+                       class="badge badge--outline">
+                        <?= htmlspecialchars($news['category_name'], ENT_QUOTES, 'UTF-8') ?>
+                    </a>
+                    <?php endif; ?>
+                    <h2 class="news-card__title">
+                        <a href="<?= htmlspecialchars(newsUrl($news['slug']), ENT_QUOTES, 'UTF-8') ?>">
+                            <?= htmlspecialchars($news['title'], ENT_QUOTES, 'UTF-8') ?>
+                        </a>
+                    </h2>
+                    <p class="news-card__excerpt">
+                        <?= htmlspecialchars(excerpt($news['content']), ENT_QUOTES, 'UTF-8') ?>
+                    </p>
+                    <div class="news-card__meta">
+                        <time datetime="<?= htmlspecialchars($news['created_at'], ENT_QUOTES, 'UTF-8') ?>">
+                            <?= timeAgo($news['created_at']) ?>
+                        </time>
+                        <?php if (!empty($news['views'])): ?>
+                        <span><?= formatViews((int)$news['views']) ?> views</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </article>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
 
-<div class="news-grid">
-<?php foreach ($news_list as $news): ?>
-  <article class="news-card">
-    <?php if ($news['featured_image']): ?>
-      <img src="<?= SITE_URL ?>/uploads/news/images/<?= htmlspecialchars($news['featured_image']) ?>">
-    <?php endif; ?>
+        <div class="app-cta-inline">
+            <p>📱 Get local alerts instantly on our app</p>
+            <a href="<?= htmlspecialchars(PLAY_STORE_URL, ENT_QUOTES, 'UTF-8') ?>" class="btn-download">Download App</a>
+        </div>
+    </section>
 
-    <div class="news-content">
-      <h3>
-        <a href="<?= SITE_URL ?>/newsxpresslive_api/web/news/<?= generateSlug($news['title']) ?>-<?= $news['id'] ?>">
-          <?= htmlspecialchars($news['title']) ?>
-        </a>
-      </h3>
+</div><!-- /.layout-main -->
 
-      <p><?= substr(strip_tags($news['description']),0,120) ?>...</p>
-
-      <div class="news-meta">
-        <span><?= timeAgo($news['created_at']) ?></span>
-        <span><?= formatViews($news['views']) ?> views</span>
-      </div>
+<aside class="layout-sidebar" aria-label="Sidebar">
+    <div class="widget">
+        <h3 class="widget__title">Categories</h3>
+        <ul class="cat-list">
+            <?php foreach (getAllCategories($pdo) as $cat): ?>
+            <li>
+                <a href="<?= htmlspecialchars(categoryUrl($cat['slug']), ENT_QUOTES, 'UTF-8') ?>"
+                   class="cat-list__link">
+                    <?= htmlspecialchars($cat['name'], ENT_QUOTES, 'UTF-8') ?>
+                </a>
+            </li>
+            <?php endforeach; ?>
+        </ul>
     </div>
-  </article>
-<?php endforeach; ?>
-</div>
+</aside>
 
-<div class="app-cta-inline">
-  <p>📱 Get local alerts instantly on our app</p>
-  <a href="<?= APP_DOWNLOAD_LINK ?>" class="btn-download">Download App</a>
-</div>
+</div><!-- /.container .page-body -->
 
-</div>
-
-<?php include __DIR__.'/../includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

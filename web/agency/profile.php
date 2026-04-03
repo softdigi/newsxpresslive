@@ -35,7 +35,7 @@ $perPage    = $pagination['perPage'];
 
 // Total articles by agency
 $countStmt = $pdo->prepare(
-    "SELECT COUNT(*) FROM news WHERE status = 'published' AND agency_id = :aid"
+    "SELECT COUNT(*) FROM news WHERE status = 'approved' AND agency_id = :aid"
 );
 $countStmt->execute([':aid' => $agencyId]);
 $total = (int)$countStmt->fetchColumn();
@@ -48,7 +48,7 @@ $stmt = $pdo->prepare(
      FROM news n
      LEFT JOIN categories c ON c.id = n.category_id
      LEFT JOIN reporters  r ON r.id = n.reporter_id
-     WHERE n.status = 'published' AND n.agency_id = :aid
+     WHERE n.status = 'approved' AND n.agency_id = :aid
      ORDER BY n.created_at DESC
      LIMIT :limit OFFSET :offset"
 );

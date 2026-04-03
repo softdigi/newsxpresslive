@@ -1,77 +1,151 @@
 <?php
-require_once __DIR__.'/../includes/config.php';
-require_once __DIR__.'/../includes/functions.php';
-require_once __DIR__.'/../includes/seo.php';
+/**
+ * Search Page (legacy /search/ endpoint)
+ * NewsXpressLive – keyword search with result highlighting
+ */
 
-$q = trim($_GET['q'] ?? '');
-// SECURITY: Limit query length to prevent DoS and sanitize
-$q = mb_substr(strip_tags($q), 0, 200);
-$results = [];
+require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/functions.php';
 
-if ($q !== '') {
-    $stmt = $pdo->prepare("
-        SELECT * FROM news
-        WHERE status='approved'
-        AND (title LIKE :q OR description LIKE :q)
-        ORDER BY created_at DESC
-        LIMIT 30
-    ");
-    $stmt->execute(['q' => "%$q%"]);
+// Sanitise query
+$rawQuery  = mb_substr(strip_tags(trim($_GET['q'] ?? '')), 0, 200);
+$safeQuery = htmlspecialchars($rawQuery, ENT_QUOTES, 'UTF-8');
+
+$results    = [];
+$total      = 0;
+$pagination = getPagination(10);
+$page       = $pagination['page'];
+$offset     = $pagination['offset'];
+$perPage    = $pagination['perPage'];
+
+if ($rawQuery !== '') {
+    $like = '%' . $rawQuery . '%';
+
+    $countStmt = $pdo->prepare(
+        "SELECT COUNT(*) FROM news
+         WHERE status = 'approved'
+           AND (title LIKE :like1 OR content LIKE :like2)"
+    );
+    $countStmt->execute([':like1' => $like, ':like2' => $like]);
+    $total = (int)$countStmt->fetchColumn();
+
+    $stmt = $pdo->prepare(
+        "SELECT n.id, n.title, n.slug, n.featured_image, n.content, n.created_at,
+                c.name AS category_name, c.slug AS category_slug
+         FROM news n
+         LEFT JOIN categories c ON c.id = n.category_id
+         WHERE n.status = 'approved'
+           AND (n.title LIKE :like1 OR n.content LIKE :like2)
+         ORDER BY n.created_at DESC
+         LIMIT :limit OFFSET :offset"
+    );
+    $stmt->bindValue(':like1',  $like,    PDO::PARAM_STR);
+    $stmt->bindValue(':like2',  $like,    PDO::PARAM_STR);
+    $stmt->bindValue(':limit',  $perPage, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset,  PDO::PARAM_INT);
+    $stmt->execute();
     $results = $stmt->fetchAll();
 }
 
-// SECURITY: Escape $q in page_title to prevent XSS
-$page_title = $q
-    ? "Search results for \"" . htmlspecialchars($q, ENT_QUOTES, 'UTF-8') . "\" - News Xpress Live"
-    : "Search News - News Xpress Live";
+$seoMeta = [
+    'title'       => $rawQuery !== '' ? 'Search: ' . $rawQuery : 'Search News',
+    'description' => 'Search results for "' . $rawQuery . '" on ' . SITE_NAME,
+    'url'         => SITE_URL . '/search/?q=' . urlencode($rawQuery),
+    'robots'      => 'noindex,follow',
+];
 
-$page_description = "Search latest news articles on News Xpress Live.";
-$canonical_url = SITE_URL."/newsxpresslive_api/web/search?q=".urlencode($q);
-
-include __DIR__.'/../includes/header.php';
+require_once __DIR__ . '/../includes/header.php';
 ?>
 
-<div class="container">
-    <h1 class="page-title">🔍 Search Results</h1>
+<div class="container page-body">
+<div class="layout-main">
 
-    <form class="search-form" method="get">
-        <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Search news..." required>
-        <button type="submit">Search</button>
-    </form>
+    <section class="section" aria-labelledby="search-heading">
+        <h1 class="section__title" id="search-heading">
+            <?php if ($rawQuery !== ''): ?>
+            Search results for <em>&ldquo;<?= $safeQuery ?>&rdquo;</em>
+            <?php else: ?>
+            <span class="section__title-accent">Search</span> News
+            <?php endif; ?>
+        </h1>
 
-    <?php if ($q && !$results): ?>
-        <p class="no-results">No news found for <strong><?= htmlspecialchars($q) ?></strong></p>
-    <?php endif; ?>
+        <form class="search-form search-form--inline" action="<?= SITE_URL ?>/search/" method="get" role="search">
+            <label for="search-q" class="sr-only">Search</label>
+            <input type="search" id="search-q" name="q"
+                   class="search-form__input"
+                   placeholder="Search news…"
+                   value="<?= $safeQuery ?>"
+                   maxlength="200">
+            <button type="submit" class="btn btn--red">Search</button>
+        </form>
 
-    <div class="news-grid">
-        <?php foreach ($results as $news): ?>
-            <article class="news-card">
-                <?php if ($news['featured_image']): ?>
-                    <img src="<?= SITE_URL ?>/uploads/news/images/<?= htmlspecialchars($news['featured_image']) ?>" alt="<?= htmlspecialchars($news['title']) ?>">
+        <?php if ($rawQuery !== ''): ?>
+        <p class="search-results__count">
+            Found <strong><?= $total ?></strong> result<?= $total !== 1 ? 's' : '' ?>
+        </p>
+
+        <?php if (empty($results)): ?>
+        <p class="no-results">No articles matched your search. Try different keywords.</p>
+        <?php else: ?>
+        <div class="search-results">
+            <?php foreach ($results as $item): ?>
+            <article class="search-result">
+                <?php if (!empty($item['featured_image'])): ?>
+                <a href="<?= htmlspecialchars(newsUrl($item['slug']), ENT_QUOTES, 'UTF-8') ?>"
+                   class="search-result__img-link">
+                    <img src="<?= htmlspecialchars(newsImage($item['featured_image']), ENT_QUOTES, 'UTF-8') ?>"
+                         alt="<?= htmlspecialchars($item['title'], ENT_QUOTES, 'UTF-8') ?>"
+                         class="search-result__img"
+                         loading="lazy">
+                </a>
                 <?php endif; ?>
-
-                <div class="news-content">
-                    <h3>
-                        <a href="<?= SITE_URL ?>/newsxpresslive_api/web/news/<?= generateSlug($news['title']) ?>-<?= $news['id'] ?>">
-                            <?= highlightKeyword($news['title'], $q) ?>
+                <div class="search-result__body">
+                    <?php if (!empty($item['category_name'])): ?>
+                    <a href="<?= htmlspecialchars(categoryUrl($item['category_slug']), ENT_QUOTES, 'UTF-8') ?>"
+                       class="badge badge--outline">
+                        <?= htmlspecialchars($item['category_name'], ENT_QUOTES, 'UTF-8') ?>
+                    </a>
+                    <?php endif; ?>
+                    <h2 class="search-result__title">
+                        <a href="<?= htmlspecialchars(newsUrl($item['slug']), ENT_QUOTES, 'UTF-8') ?>">
+                            <?= highlightKeywords($item['title'], $rawQuery) ?>
                         </a>
-                    </h3>
-                    <p><?= highlightKeyword(substr(strip_tags($news['description']),0,140), $q) ?>...</p>
-
-                    <div class="news-meta">
-                        <span><?= timeAgo($news['created_at']) ?></span>
-                        <span><?= formatViews($news['id']) ?> views</span>
-                    </div>
+                    </h2>
+                    <p class="search-result__excerpt">
+                        <?= highlightKeywords(excerpt($item['content'], 200), $rawQuery) ?>
+                    </p>
+                    <time class="search-result__date" datetime="<?= htmlspecialchars($item['created_at'], ENT_QUOTES, 'UTF-8') ?>">
+                        <?= formatDate($item['created_at']) ?>
+                    </time>
                 </div>
             </article>
-        <?php endforeach; ?>
-    </div>
+            <?php endforeach; ?>
+        </div>
 
-    <!-- App CTA -->
-    <div class="app-cta-inline">
-        <p>📱 Read full stories faster on our app</p>
-        <a href="<?= defined('APP_DOWNLOAD_LINK') ? APP_DOWNLOAD_LINK : '#' ?>" class="btn-download">Download App</a>
-    </div>
-</div>
+        <?php renderPagination($total, $perPage, $page, SITE_URL . '/search/?q=' . urlencode($rawQuery)); ?>
+        <?php endif; ?>
+        <?php endif; ?>
 
-<?php include __DIR__.'/../includes/footer.php'; ?>
+    </section>
+
+</div><!-- /.layout-main -->
+
+<aside class="layout-sidebar" aria-label="Sidebar">
+    <div class="widget">
+        <h3 class="widget__title">Categories</h3>
+        <ul class="cat-list">
+            <?php foreach (getAllCategories($pdo) as $cat): ?>
+            <li>
+                <a href="<?= htmlspecialchars(categoryUrl($cat['slug']), ENT_QUOTES, 'UTF-8') ?>"
+                   class="cat-list__link">
+                    <?= htmlspecialchars($cat['name'], ENT_QUOTES, 'UTF-8') ?>
+                </a>
+            </li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+</aside>
+
+</div><!-- /.container .page-body -->
+
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

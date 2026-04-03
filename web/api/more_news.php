@@ -27,7 +27,7 @@ $sort    = trim($_GET['sort'] ?? '');    // 'viral' enables feed-boost mode
 
 // ── Build base WHERE clause ───────────────────────────────────────────
 $where  = 'n.status = :status';
-$params = [':status' => 'published'];
+$params = [':status' => 'approved'];
 
 if ($catSlug !== '') {
     $where .= ' AND c.slug = :cat';

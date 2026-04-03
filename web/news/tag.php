@@ -38,7 +38,7 @@ if ($tagSlug !== '') {
                  INNER JOIN news_tags nt ON nt.news_id = n.id
                  WHERE nt.tag_id = :tag_id AND n.status = :status'
             );
-            $countStmt->execute([':tag_id' => $tagId, ':status' => 'published']);
+            $countStmt->execute([':tag_id' => $tagId, ':status' => 'approved']);
             $totalItems = (int)$countStmt->fetchColumn();
             
             // Get news
@@ -53,7 +53,7 @@ if ($tagSlug !== '') {
                  LIMIT :limit OFFSET :offset'
             );
             $newsStmt->bindValue(':tag_id', $tagId, PDO::PARAM_INT);
-            $newsStmt->bindValue(':status', 'published', PDO::PARAM_STR);
+            $newsStmt->bindValue(':status', 'approved', PDO::PARAM_STR);
             $newsStmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
             $newsStmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $newsStmt->execute();

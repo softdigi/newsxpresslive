@@ -139,7 +139,7 @@ if ($eventType === 'share') {
     try {
         $pdo->prepare(
             "UPDATE news SET shares_count = COALESCE(shares_count, 0) + 1
-             WHERE id = :id AND status = 'published'"
+             WHERE id = :id AND status = 'approved'"
         )->execute([':id' => $newsId]);
     } catch (PDOException $e) {
         error_log('track share increment: ' . $e->getMessage());

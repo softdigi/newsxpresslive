@@ -33,7 +33,7 @@ $offset     = $pagination['offset'];
 $perPage    = $pagination['perPage'];
 
 $countStmt = $pdo->prepare(
-    "SELECT COUNT(*) FROM news WHERE status = 'published' AND city_id = :city_id"
+    "SELECT COUNT(*) FROM news WHERE status = 'approved' AND city_id = :city_id"
 );
 $countStmt->execute([':city_id' => $cityId]);
 $total = (int)$countStmt->fetchColumn();
@@ -43,7 +43,7 @@ $stmt = $pdo->prepare(
             c.name AS category_name, c.slug AS category_slug
      FROM news n
      LEFT JOIN categories c ON c.id = n.category_id
-     WHERE n.status = 'published' AND n.city_id = :city_id
+     WHERE n.status = 'approved' AND n.city_id = :city_id
      ORDER BY n.created_at DESC
      LIMIT :limit OFFSET :offset"
 );

@@ -27,7 +27,7 @@ if ($rawQuery !== '') {
     // Total count for pagination
     $countStmt = $pdo->prepare(
         "SELECT COUNT(*) FROM news
-         WHERE status = 'published'
+         WHERE status = 'approved'
            AND (title LIKE :like1 OR content LIKE :like2)"
     );
     $countStmt->execute([':like1' => $like, ':like2' => $like]);
@@ -39,7 +39,7 @@ if ($rawQuery !== '') {
                 c.name AS category_name, c.slug AS category_slug
          FROM news n
          LEFT JOIN categories c ON c.id = n.category_id
-         WHERE n.status = 'published'
+         WHERE n.status = 'approved'
            AND (n.title LIKE :like1 OR n.content LIKE :like2)
          ORDER BY n.created_at DESC
          LIMIT :limit OFFSET :offset"

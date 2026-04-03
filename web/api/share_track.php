@@ -65,7 +65,7 @@ try {
     $pdo->prepare(
         "UPDATE news
          SET shares_count = COALESCE(shares_count, 0) + 1
-         WHERE id = :id AND status = 'published'"
+         WHERE id = :id AND status = 'approved'"
     )->execute([':id' => $newsId]);
 } catch (PDOException $e) {
     // Column may not exist on legacy DB — try to add it
@@ -74,7 +74,7 @@ try {
         try {
             $pdo->exec('ALTER TABLE news ADD COLUMN shares_count INT UNSIGNED NOT NULL DEFAULT 0');
             $pdo->prepare(
-                "UPDATE news SET shares_count = 1 WHERE id = :id AND status = 'published'"
+                "UPDATE news SET shares_count = 1 WHERE id = :id AND status = 'approved'"
             )->execute([':id' => $newsId]);
         } catch (PDOException $e2) {
             error_log('share_track shares_count: ' . $e2->getMessage());

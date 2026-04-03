@@ -46,7 +46,7 @@ try {
          ORDER BY r.created_at DESC
          LIMIT :limit OFFSET :offset'
     );
-    $stmt->bindValue(':status', 'published', PDO::PARAM_STR);
+    $stmt->bindValue(':status', 'approved', PDO::PARAM_STR);
     $stmt->bindValue(':limit',  $perPage,    PDO::PARAM_INT);
     $stmt->bindValue(':offset', $offset,     PDO::PARAM_INT);
     $stmt->execute();

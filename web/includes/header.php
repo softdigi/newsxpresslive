@@ -21,7 +21,7 @@ $breakingStmt = $pdo->prepare(
     'SELECT title, slug FROM news WHERE status = :status AND is_breaking = 1
      ORDER BY created_at DESC LIMIT 8'
 );
-$breakingStmt->execute([':status' => 'published']);
+$breakingStmt->execute([':status' => 'approved']);
 $breakingNews = $breakingStmt->fetchAll();
 
 // Determine current page URL for canonical / nav highlighting

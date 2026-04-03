@@ -43,7 +43,7 @@ $perPage    = $pagination['perPage'];
 
 // Count
 $countStmt = $pdo->prepare(
-    "SELECT COUNT(*) FROM news WHERE status = 'published' AND category_id = :cat_id"
+    "SELECT COUNT(*) FROM news WHERE status = 'approved' AND category_id = :cat_id"
 );
 $countStmt->execute([':cat_id' => $category['id']]);
 $total = (int)$countStmt->fetchColumn();
@@ -52,7 +52,7 @@ $total = (int)$countStmt->fetchColumn();
 $stmt = $pdo->prepare(
     "SELECT n.id, n.title, n.slug, n.featured_image, n.content, n.created_at
      FROM news n
-     WHERE n.status = 'published' AND n.category_id = :cat_id
+     WHERE n.status = 'approved' AND n.category_id = :cat_id
      ORDER BY n.created_at DESC
      LIMIT :limit OFFSET :offset"
 );

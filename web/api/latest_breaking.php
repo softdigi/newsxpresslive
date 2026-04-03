@@ -18,7 +18,7 @@ try {
          ORDER BY created_at DESC 
          LIMIT 1'
     );
-    $stmt->execute([':status' => 'published']);
+    $stmt->execute([':status' => 'approved']);
     $news = $stmt->fetch();
     
     if ($news) {

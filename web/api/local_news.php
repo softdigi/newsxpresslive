@@ -44,7 +44,7 @@ try {
              ORDER BY n.created_at DESC
              LIMIT 4'
         );
-        $stmt->execute([':status' => 'published']);
+        $stmt->execute([':status' => 'approved']);
         $news = $stmt->fetchAll();
         
         foreach ($news as &$item) {

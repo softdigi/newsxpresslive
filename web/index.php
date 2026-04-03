@@ -23,7 +23,7 @@ $featuredStmt = $pdo->prepare(
      ORDER BY n.created_at DESC
      LIMIT 5'
 );
-$featuredStmt->execute([':status' => 'published']);
+$featuredStmt->execute([':status' => 'approved']);
 $featuredNews = $featuredStmt->fetchAll();
 
 /* ── 2. Latest news grid (9 items) ─────────────────────────────────── */
@@ -37,7 +37,7 @@ $latestStmt = $pdo->prepare(
      ORDER BY n.created_at DESC
      LIMIT 9'
 );
-$latestStmt->execute([':status' => 'published']);
+$latestStmt->execute([':status' => 'approved']);
 $latestNews = $latestStmt->fetchAll();
 
 /* ── 3. Categories with their latest 4 news each ───────────────────── */
@@ -58,7 +58,7 @@ if (!empty($allCategories)) {
                 c.name AS category_name, c.slug AS category_slug
          FROM news n
          INNER JOIN categories c ON c.id = n.category_id
-         WHERE n.status = 'published'
+         WHERE n.status = 'approved'
            AND n.category_id IN ($placeholders)
          ORDER BY n.category_id, n.created_at DESC
          LIMIT $sqlLimit"
@@ -91,7 +91,7 @@ $trendingStmt = $pdo->prepare(
      ORDER BY trend_score DESC
      LIMIT 6'
 );
-$trendingStmt->execute([':status' => 'published']);
+$trendingStmt->execute([':status' => 'approved']);
 $trendingNews = $trendingStmt->fetchAll();
 
 /* ── 5. "For You" – session-based personalisation ───────────────────── */
@@ -112,7 +112,7 @@ if (!empty($_SESSION['pref_cats']) && is_array($_SESSION['pref_cats'])) {
              ORDER BY n.created_at DESC
              LIMIT 4'
         );
-        $fyStmt->execute([':status' => 'published', ':cat_id' => $topCatId]);
+        $fyStmt->execute([':status' => 'approved', ':cat_id' => $topCatId]);
         $forYouNews    = $fyStmt->fetchAll();
         $forYouCatName = $forYouNews[0]['category_name'] ?? '';
     }

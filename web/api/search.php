@@ -34,7 +34,7 @@ try {
          ORDER BY n.created_at DESC
          LIMIT :lim OFFSET :off'
     );
-    $stmt->bindValue(':status', 'published', PDO::PARAM_STR);
+    $stmt->bindValue(':status', 'approved', PDO::PARAM_STR);
     $stmt->bindValue(':like1',  $like,       PDO::PARAM_STR);
     $stmt->bindValue(':like2',  $like,       PDO::PARAM_STR);
     $stmt->bindValue(':lim',    $perPage,    PDO::PARAM_INT);

@@ -34,7 +34,7 @@ $stmt = $pdo->prepare(
      WHERE n.slug = :slug AND n.status = :status
      LIMIT 1'
 );
-$stmt->execute([':slug' => $slug, ':status' => 'published']);
+$stmt->execute([':slug' => $slug, ':status' => 'approved']);
 $news = $stmt->fetch();
 
 if (!$news) {
@@ -92,7 +92,7 @@ if (!empty($news['category_id'])) {
          LIMIT 4'
     );
     $relStmt->execute([
-        ':status' => 'published',
+        ':status' => 'approved',
         ':cat_id' => $news['category_id'],
         ':id'     => $news['id'],
     ]);
@@ -108,7 +108,7 @@ if (!empty($news['category_id'])) {
          ORDER BY created_at DESC LIMIT 1'
     );
     $nextStmt->execute([
-        ':status' => 'published',
+        ':status' => 'approved',
         ':cat_id' => $news['category_id'],
         ':id'     => $news['id'],
     ]);
@@ -145,7 +145,7 @@ $sideStmt = $pdo->prepare(
     'SELECT title, slug, created_at FROM news
      WHERE status = :status ORDER BY created_at DESC LIMIT 6'
 );
-$sideStmt->execute([':status' => 'published']);
+$sideStmt->execute([':status' => 'approved']);
 $sideItems = $sideStmt->fetchAll();
 
 /* ── Ad code from settings ──────────────────────────────────────────── */

@@ -28,7 +28,7 @@ try {
          ORDER BY n.viral_score DESC, n.views DESC, n.created_at DESC
          LIMIT :lim'
     );
-    $stmt->bindValue(':status', 'published', PDO::PARAM_STR);
+    $stmt->bindValue(':status', 'approved', PDO::PARAM_STR);
     $stmt->bindValue(':lim',    $limit,      PDO::PARAM_INT);
     $stmt->execute();
 
@@ -49,7 +49,7 @@ try {
              ORDER BY n.viral_score DESC, n.views DESC, n.created_at DESC
              LIMIT :lim'
         );
-        $stmt2->bindValue(':status', 'published', PDO::PARAM_STR);
+        $stmt2->bindValue(':status', 'approved', PDO::PARAM_STR);
         $stmt2->bindValue(':lim',    $limit,      PDO::PARAM_INT);
         $stmt2->execute();
         $rows = $stmt2->fetchAll();

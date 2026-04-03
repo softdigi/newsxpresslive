@@ -35,7 +35,7 @@ $perPage    = $pagination['perPage'];
 
 // Total articles by reporter
 $countStmt = $pdo->prepare(
-    "SELECT COUNT(*) FROM news WHERE status = 'published' AND reporter_id = :rid"
+    "SELECT COUNT(*) FROM news WHERE status = 'approved' AND reporter_id = :rid"
 );
 $countStmt->execute([':rid' => $reporterId]);
 $total = (int)$countStmt->fetchColumn();
@@ -46,7 +46,7 @@ $stmt = $pdo->prepare(
             c.name AS category_name, c.slug AS category_slug
      FROM news n
      LEFT JOIN categories c ON c.id = n.category_id
-     WHERE n.status = 'published' AND n.reporter_id = :rid
+     WHERE n.status = 'approved' AND n.reporter_id = :rid
      ORDER BY n.created_at DESC
      LIMIT :limit OFFSET :offset"
 );

@@ -21,7 +21,7 @@ $stmt = $pdo->prepare(
      ORDER BY n.created_at DESC
      LIMIT 1000'
 );
-$stmt->execute([':status' => 'published']);
+$stmt->execute([':status' => 'approved']);
 $newsItems = $stmt->fetchAll();
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";

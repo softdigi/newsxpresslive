@@ -124,7 +124,7 @@ function updateViralScore(PDO $pdo, int $newsId): float
             'SELECT views, shares_count, created_at
              FROM news WHERE id = :id AND status = :st LIMIT 1'
         );
-        $stmt->execute([':id' => $newsId, ':st' => 'published']);
+        $stmt->execute([':id' => $newsId, ':st' => 'approved']);
         $news = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$news) {

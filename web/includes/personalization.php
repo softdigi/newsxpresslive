@@ -91,7 +91,7 @@ function getPersonalizedFeed(PDO $pdo, string $sessionId, int $limit = 12): arra
              ORDER BY n.created_at DESC
              LIMIT 200'
         );
-        $candidateStmt->execute([':status' => 'published']);
+        $candidateStmt->execute([':status' => 'approved']);
         $candidates = $candidateStmt->fetchAll();
     } catch (PDOException $e) {
         return _fetchLatestNews($pdo, $limit);
@@ -211,7 +211,7 @@ function getCollaborativeArticles(PDO $pdo, string $sessionId, int $limit = 6): 
                     c.name AS category_name, c.slug AS category_slug,
                     COUNT(ub.session_id) AS collab_score
              FROM user_behavior ub
-             JOIN news n ON n.id = ub.news_id AND n.status = 'published'
+             JOIN news n ON n.id = ub.news_id AND n.status = 'approved'
              LEFT JOIN categories c ON c.id = n.category_id
              WHERE ub.session_id IN ($simIn)
                AND ub.event_type IN ('read','scroll')";
@@ -249,7 +249,7 @@ function _fetchLatestNews(PDO $pdo, int $limit): array
              ORDER BY n.created_at DESC
              LIMIT ' . (int)$limit
         );
-        $stmt->execute([':status' => 'published']);
+        $stmt->execute([':status' => 'approved']);
         return $stmt->fetchAll();
     } catch (PDOException $e) {
         return [];

@@ -32,7 +32,7 @@ try {
          WHERE n.slug = :slug AND n.status = :status
          LIMIT 1'
     );
-    $stmt->execute([':slug' => $slug, ':status' => 'published']);
+    $stmt->execute([':slug' => $slug, ':status' => 'approved']);
     $row = $stmt->fetch();
 
     if (!$row) {
