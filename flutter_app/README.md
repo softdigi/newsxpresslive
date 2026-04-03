@@ -60,7 +60,35 @@ A cross-platform mobile app (Android & iOS) for the NewsXpressLive news platform
    flutter pub get
    ```
 
-4. **Run the app**:
+4. **Firebase Setup** (required for Auth, FCM, Analytics):
+
+   ```bash
+   # Step 1: FlutterFire CLI install karo
+   dart pub global activate flutterfire_cli
+
+   # Step 2: Configure (ye automatically 3 files banayega)
+   flutterfire configure --project=your-firebase-project-id
+   ```
+
+   Ye 3 files generate hongi:
+   - `lib/firebase_options.dart` ← auto-import in `main.dart`
+   - `android/app/google-services.json`
+   - `ios/Runner/GoogleService-Info.plist`
+
+   > **Demo templates** already present hain — unhe reference ke liye dekho:
+   > - `lib/firebase_options.demo.dart`
+   > - `android/app/google-services.demo.json`
+   > - `ios/Runner/GoogleService-Info.demo.plist`
+
+5. **App Config** (AdMob IDs, bundle ID):
+   ```bash
+   cp lib/core/constants/app_config.demo.dart \
+      lib/core/constants/app_config.dart
+   # Phir YOUR_... values replace karo
+   ```
+   Template: `lib/core/constants/app_config.demo.dart`
+
+6. **Run the app**:
    ```bash
    flutter run
    ```
