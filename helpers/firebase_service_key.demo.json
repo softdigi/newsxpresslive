@@ -1,0 +1,32 @@
+{
+  "_comment": "=================================================================",
+  "_comment2": "DEMO / TEMPLATE FILE — NOT a real key. Safe to commit.",
+  "_comment3": "Copy this file to:  helpers/firebase_service_key.json",
+  "_comment4": "Then replace EVERY value that starts with YOUR_ with real data.",
+  "_comment5": "NEVER commit the real firebase_service_key.json file.",
+  "_comment6": "=================================================================",
+
+  "type": "service_account",
+
+  "project_id": "YOUR_FIREBASE_PROJECT_ID",
+
+  "private_key_id": "YOUR_PRIVATE_KEY_ID_40_HEX_CHARS",
+
+  "private_key": "-----BEGIN RSA PRIVATE KEY-----\nYOUR_PRIVATE_KEY_CONTENT_HERE\n-----END RSA PRIVATE KEY-----\n",
+
+  "client_email": "firebase-adminsdk-xxxxx@YOUR_FIREBASE_PROJECT_ID.iam.gserviceaccount.com",
+
+  "client_id": "YOUR_CLIENT_ID_NUMBERS",
+
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+
+  "token_uri": "https://oauth2.googleapis.com/token",
+
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-xxxxx%40YOUR_FIREBASE_PROJECT_ID.iam.gserviceaccount.com",
+
+  "databaseURL": "https://YOUR_FIREBASE_PROJECT_ID-default-rtdb.firebaseio.com",
+
+  "universe_domain": "googleapis.com"
+}
