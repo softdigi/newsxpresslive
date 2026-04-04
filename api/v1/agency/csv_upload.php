@@ -232,6 +232,8 @@ $invalidRows  = [];  // [{row, reason}]
 
 foreach ($articles as $rowNum => $article) {
     $dataRow = $rowNum + 2;  // +1 for header, +1 for 1-based row number
+    // Security: sanitize CSV injection characters before validation
+    $article = _sanitizeArticleRow($article);
     $errors  = _validateRow($article);
     if (empty($errors)) {
         $validRows[] = $article;
@@ -322,6 +324,115 @@ $knownColumns = [
  * Validate a single parsed article row.
  * Returns array of error strings (empty = valid).
  */
+/**
+ * Sanitize a single CSV cell value against CSV injection.
+ *
+ * Spreadsheet applications (Excel, LibreOffice) interpret cells that begin
+ * with =, +, -, or @ as formula expressions.  An attacker could craft
+ * a cell like  =HYPERLINK("http://evil.com","Click me")  which would
+ * execute when a recipient opens the exported error-report CSV.
+ *
+ * Mitigation: prefix any such cell with a single-quote ' so the cell is
+ * treated as plain text.  We apply this to every string field before
+ * storing/returning data so that if the value is later written to CSV it
+ * is safe.
+ *
+ * Reference: OWASP CSV Injection
+ * https://owasp.org/www-community/attacks/CSV_Injection
+ *
+ * @param  string $value  Raw cell value from the uploaded file.
+ * @return string         Sanitized value.
+ */
+function _sanitizeCsvCell(string $value): string
+{
+    $value = trim($value);
+    // Prefix formula-starting characters with a tab character (safe for CSV)
+    // so that spreadsheet apps will not evaluate the cell as a formula.
+    if (strlen($value) > 0 && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+        $value = "\t" . $value;
+    }
+    return $value;
+}
+
+/**
+ * Scan article text fields for malicious HTML/script content.
+ * Returns an array of error strings (empty = safe).
+ *
+ * Specifically checks for:
+ *   • <script> tags (inline JavaScript injection)
+ *   • <iframe> tags (content injection / clickjacking)
+ *   • javascript: URIs (XSS via href/src attributes)
+ *   • <object>, <embed>, <form> tags (plugin / phishing vectors)
+ *   • on* event handler attributes (onclick, onload, etc.)
+ *
+ * @param  array  $row  Parsed article row.
+ * @return string[]     Array of error messages (empty if clean).
+ */
+function _scanMaliciousContent(array $row): array
+{
+    $errors = [];
+    $fieldsToScan = ['title', 'content', 'summary'];
+
+    // Patterns that indicate malicious content
+    $patterns = [
+        '/<script[\s>]/i'           => 'contains <script> tag',
+        '/<\/script>/i'             => 'contains </script> tag',
+        '/<iframe[\s>]/i'           => 'contains <iframe> tag',
+        '/<object[\s>]/i'           => 'contains <object> tag',
+        '/<embed[\s>]/i'            => 'contains <embed> tag',
+        '/<form[\s>]/i'             => 'contains <form> tag',
+        '/javascript\s*:/i'         => 'contains javascript: URI',
+        '/\bon\w+\s*=/i'            => 'contains inline event handler (on*=)',
+        '/vbscript\s*:/i'           => 'contains vbscript: URI',
+        '/data\s*:\s*text\/html/i'  => 'contains data:text/html URI',
+    ];
+
+    foreach ($fieldsToScan as $field) {
+        $value = $row[$field] ?? '';
+        if ($value === '') {
+            continue;
+        }
+        foreach ($patterns as $pattern => $description) {
+            if (preg_match($pattern, $value)) {
+                $errors[] = "field '{$field}' {$description}";
+                break;  // one error per field is enough
+            }
+        }
+    }
+
+    return $errors;
+}
+
+/**
+ * Sanitize all string fields in a parsed article row:
+ *   1. Apply CSV injection protection to every string cell.
+ *   2. Strip dangerous HTML tags from text fields while keeping safe markup.
+ *
+ * @param  array $row  Raw parsed article.
+ * @return array       Sanitized article.
+ */
+function _sanitizeArticleRow(array $row): array
+{
+    $stringFields = ['external_id', 'title', 'content', 'summary', 'language', 'image_url', 'source_url'];
+
+    foreach ($stringFields as $field) {
+        if (isset($row[$field]) && is_string($row[$field])) {
+            $row[$field] = _sanitizeCsvCell($row[$field]);
+        }
+    }
+
+    // Strip dangerous HTML from rich-text fields
+    $richTextFields = ['title', 'content', 'summary'];
+    $allowedTags = '<p><br><b><strong><em><i><ul><ol><li><h1><h2><h3><h4><blockquote><a>';
+    foreach ($richTextFields as $field) {
+        if (isset($row[$field]) && is_string($row[$field])) {
+            $row[$field] = strip_tags($row[$field], $allowedTags);
+        }
+    }
+
+    return $row;
+}
+
 function _validateRow(array $row): array
 {
     $errors = [];
@@ -359,6 +470,10 @@ function _validateRow(array $row): array
             $errors[] = 'published_at is not a valid datetime (use ISO-8601, e.g. 2024-01-15T10:30:00Z)';
         }
     }
+
+    // Security: scan for malicious content (script/iframe injection)
+    $maliciousErrors = _scanMaliciousContent($row);
+    $errors = array_merge($errors, $maliciousErrors);
 
     return $errors;
 }
