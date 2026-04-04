@@ -86,4 +86,14 @@ class ApiEndpoints {
   // ── Feature Flags ─────────────────────────────────────────────────────
   /// GET ?user_id=xx&platform=app → enabled feature flags
   static const String featureFlags = '$baseUrl/api/v1/feature_flags.php';
+
+  // ── Agency Partner ────────────────────────────────────────────────────
+  static const String agencyBase    = '$baseUrl/api/v1/agency';
+  static const String agencyLogin   = '$agencyBase/auth.php';
+  static const String agencySubmit  = '$agencyBase/submit.php';
+  static const String agencyBulk    = '$agencyBase/bulk_submit.php';
+  static const String agencyCsvUpload = '$agencyBase/csv_upload.php';
+  static const String agencyArticles  = '$agencyBase/articles.php';
+  static const String agencyRevenue   = '$agencyBase/revenue.php';
+  static const String agencyWithdraw  = '$agencyBase/withdraw.php';
 }
