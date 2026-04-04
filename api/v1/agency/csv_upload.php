@@ -1,22 +1,20 @@
 <?php
 // ============================================================
 // api/v1/agency/csv_upload.php
+//
 // POST /api/v1/agency/csv_upload
+//   Upload a .csv or .xlsx file (max 10 MB, max 500 rows).
+//   Per-row validation runs synchronously.
+//   Valid rows are queued for background processing.
+//   Response: {success, data:{upload_id, total, valid_count, invalid_count, …}}
 //
-// Accepts a multipart/form-data file upload (.csv or .xlsx).
-// Parses up to 500 rows and queues them as an agency_bulk_uploads job.
+// GET /api/v1/agency/csv_upload?upload_id={N}
+//   Returns status of a previous upload + downloadable error report.
 //
-// Supported CSV columns (header row required):
-//   external_id, title, content, summary, category_id, language,
-//   image_url, tags, published_at, source_url
-//
-// Required: title, content, category_id
-// Optional: all others
-//
-// Response:
-//   {success: true, job_id: N, total_rows: N, queued: true}
-//
-// Cron process_agency_bulk.php processes the queued job.
+// CSV columns (header row required):
+//   external_id*, title*, content*, summary, category_id, language,
+//   image_url, tags (pipe-separated), published_at, source_url
+//   (* = required per-row)
 // ============================================================
 
 declare(strict_types=1);
@@ -30,16 +28,104 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'error' => 'POST required']);
-    exit;
-}
-
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../auth/agency_auth.php';
 
 $agency = requireAgency($pdo);
+
+// ── Route: GET — upload status / error report ─────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $uploadId = filter_input(INPUT_GET, 'upload_id', FILTER_VALIDATE_INT);
+    if (!$uploadId) {
+        http_response_code(400);
+        echo json_encode([
+            'success'   => false,
+            'data'      => null,
+            'error'     => 'upload_id (integer) is required',
+            'timestamp' => gmdate('c'),
+        ]);
+        exit;
+    }
+
+    try {
+        $stmt = $pdo->prepare(
+            'SELECT id, filename, total_rows, success_count, failed_count,
+                    duplicate_count, status, error_log, created_at, completed_at
+             FROM   agency_bulk_uploads
+             WHERE  id = ? AND agency_id = ?'
+        );
+        $stmt->execute([$uploadId, $agency['id']]);
+        $upload = $stmt->fetch();
+
+        if (!$upload) {
+            http_response_code(404);
+            echo json_encode([
+                'success'   => false,
+                'data'      => null,
+                'error'     => 'Upload not found',
+                'timestamp' => gmdate('c'),
+            ]);
+            exit;
+        }
+
+        $errorRows = $upload['error_log'] ? json_decode($upload['error_log'], true) : [];
+
+        // Build a downloadable CSV error report URL
+        $errorReportUrl = null;
+        if (!empty($errorRows)) {
+            $reportDir  = __DIR__ . '/../../../web/uploads/agency_error_reports/';
+            $reportFile = 'errors_' . $uploadId . '_' . $agency['id'] . '.csv';
+            if (!is_dir($reportDir)) {
+                mkdir($reportDir, 0755, true);
+            }
+            $reportPath = $reportDir . $reportFile;
+            if (!file_exists($reportPath)) {
+                _writeErrorCsv($reportPath, $errorRows);
+            }
+            $errorReportUrl = '/uploads/agency_error_reports/' . $reportFile;
+        }
+
+        echo json_encode([
+            'success'   => true,
+            'data'      => [
+                'upload_id'       => (int)$upload['id'],
+                'filename'        => $upload['filename'],
+                'status'          => $upload['status'],
+                'total'           => (int)$upload['total_rows'],
+                'valid_count'     => (int)$upload['success_count'],
+                'invalid_count'   => (int)$upload['failed_count'],
+                'duplicate_count' => (int)$upload['duplicate_count'],
+                'error_report'    => $errorReportUrl,
+                'errors'          => $errorRows,
+                'created_at'      => $upload['created_at'],
+                'completed_at'    => $upload['completed_at'],
+            ],
+            'error'     => null,
+            'timestamp' => gmdate('c'),
+        ]);
+    } catch (PDOException $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success'   => false,
+            'data'      => null,
+            'error'     => 'Database error',
+            'timestamp' => gmdate('c'),
+        ]);
+    }
+    exit;
+}
+
+// ── Route: POST — file upload ─────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode([
+        'success'   => false,
+        'data'      => null,
+        'error'     => 'Method not allowed. Use POST to upload, GET to check status.',
+        'timestamp' => gmdate('c'),
+    ]);
+    exit;
+}
 
 // ── File checks ───────────────────────────────────────────────────────────────
 if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
@@ -140,47 +226,163 @@ if (count($articles) > $maxRows) {
 
 $totalRows = count($articles);
 
-// ── Persist payload for background processing ─────────────────────────────────
+// ── Per-row validation ────────────────────────────────────────────────────────
+$validRows    = [];
+$invalidRows  = [];  // [{row, reason}]
+
+foreach ($articles as $rowNum => $article) {
+    $dataRow = $rowNum + 2;  // +1 for header, +1 for 1-based row number
+    $errors  = _validateRow($article);
+    if (empty($errors)) {
+        $validRows[] = $article;
+    } else {
+        $invalidRows[] = [
+            'row'    => $dataRow,
+            'data'   => [
+                'external_id' => $article['external_id'] ?? '',
+                'title'       => isset($article['title']) ? mb_substr($article['title'], 0, 80) : '',
+            ],
+            'reason' => implode('; ', $errors),
+        ];
+    }
+}
+
+$validCount   = count($validRows);
+$invalidCount = count($invalidRows);
+
+// ── Persist valid payload for background processing ───────────────────────────
 $payloadDir = __DIR__ . '/../../../web/uploads/agency_bulk/';
 if (!is_dir($payloadDir) && !mkdir($payloadDir, 0755, true)) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Cannot create bulk payload directory']);
+    echo json_encode([
+        'success'   => false,
+        'data'      => null,
+        'error'     => 'Cannot create bulk payload directory',
+        'timestamp' => gmdate('c'),
+    ]);
     exit;
 }
 $payloadFile = 'bulk_csv_' . bin2hex(random_bytes(8)) . '.json';
-file_put_contents($payloadDir . $payloadFile, json_encode($articles));
+file_put_contents($payloadDir . $payloadFile, json_encode($validRows));
 
 // ── Create agency_bulk_uploads row ────────────────────────────────────────────
-$stmt = $pdo->prepare(
-    'INSERT INTO agency_bulk_uploads
-        (agency_id, filename, file_path, total_rows, status, created_at)
-     VALUES (?, ?, ?, ?, \'queued\', NOW())'
-);
-$stmt->execute([
-    $agency['id'],
-    $storedFilename,
-    'uploads/agency_csv/' . $storedFilename,
-    $totalRows,
-]);
-$jobId = (int)$pdo->lastInsertId();
+try {
+    $stmt = $pdo->prepare(
+        'INSERT INTO agency_bulk_uploads
+            (agency_id, filename, file_path, total_rows, success_count, failed_count, status, error_log, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+    );
+    $stmt->execute([
+        $agency['id'],
+        $storedFilename,
+        'uploads/agency_bulk/' . $payloadFile,
+        $totalRows,
+        $validCount,
+        $invalidCount,
+        $validCount > 0 ? 'queued' : 'completed',
+        $invalidCount > 0 ? json_encode($invalidRows) : null,
+    ]);
+    $uploadId = (int)$pdo->lastInsertId();
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo json_encode([
+        'success'   => false,
+        'data'      => null,
+        'error'     => 'Failed to create upload record',
+        'timestamp' => gmdate('c'),
+    ]);
+    exit;
+}
 
 echo json_encode([
-    'success'    => true,
-    'job_id'     => $jobId,
-    'filename'   => $origName,
-    'total_rows' => $totalRows,
-    'queued'     => true,
-    'message'    => "File parsed successfully. {$totalRows} rows queued for processing. "
-        . "Check status at GET /api/v1/agency/articles/bulk/{$jobId}",
+    'success'   => true,
+    'data'      => [
+        'upload_id'     => $uploadId,
+        'filename'      => $origName,
+        'total'         => $totalRows,
+        'valid_count'   => $validCount,
+        'invalid_count' => $invalidCount,
+        'queued'        => $validCount > 0,
+        'status_url'    => '/api/v1/agency/csv_upload?upload_id=' . $uploadId,
+        'preview_errors' => array_slice($invalidRows, 0, 5),
+    ],
+    'error'     => null,
+    'timestamp' => gmdate('c'),
 ]);
 
-// ── Parsers ───────────────────────────────────────────────────────────────────
+// ── Parsers & Validators ──────────────────────────────────────────────────────
 
 $knownColumns = [
     'external_id', 'title', 'content', 'summary',
     'category_id', 'language', 'image_url',
     'tags', 'published_at', 'source_url',
 ];
+
+/**
+ * Validate a single parsed article row.
+ * Returns array of error strings (empty = valid).
+ */
+function _validateRow(array $row): array
+{
+    $errors = [];
+
+    // Required fields
+    if (empty($row['external_id'])) {
+        $errors[] = 'external_id is required';
+    }
+    if (empty($row['title'])) {
+        $errors[] = 'title is required';
+    } elseif (mb_strlen($row['title']) < 10) {
+        $errors[] = 'title must be at least 10 characters';
+    } elseif (mb_strlen($row['title']) > 200) {
+        $errors[] = 'title must not exceed 200 characters';
+    }
+    if (empty($row['content'])) {
+        $errors[] = 'content is required';
+    } elseif (mb_strlen($row['content']) < 100) {
+        $errors[] = 'content must be at least 100 characters';
+    }
+
+    // Optional URL fields
+    foreach (['image_url', 'source_url'] as $urlField) {
+        if (!empty($row[$urlField])) {
+            if (filter_var($row[$urlField], FILTER_VALIDATE_URL) === false) {
+                $errors[] = "{$urlField} is not a valid URL";
+            }
+        }
+    }
+
+    // Optional datetime field
+    if (!empty($row['published_at'])) {
+        $ts = strtotime($row['published_at']);
+        if ($ts === false || $ts <= 0) {
+            $errors[] = 'published_at is not a valid datetime (use ISO-8601, e.g. 2024-01-15T10:30:00Z)';
+        }
+    }
+
+    return $errors;
+}
+
+/**
+ * Write an error report CSV to $path from the $errorRows array.
+ */
+function _writeErrorCsv(string $path, array $errorRows): void
+{
+    $fh = @fopen($path, 'w');
+    if ($fh === false) {
+        return;
+    }
+    fputcsv($fh, ['row_number', 'external_id', 'title_preview', 'reason']);
+    foreach ($errorRows as $err) {
+        fputcsv($fh, [
+            $err['row']              ?? '',
+            $err['data']['external_id'] ?? '',
+            $err['data']['title']    ?? '',
+            $err['reason']           ?? '',
+        ]);
+    }
+    fclose($fh);
+}
 
 /**
  * Parse a CSV file into an array of article arrays.
@@ -206,7 +408,7 @@ function _parseCsv(string $path): array|string
     $header = array_map(fn($h) => strtolower(trim($h)), $header);
 
     // Validate required columns exist in header
-    $required = ['title', 'content', 'category_id'];
+    $required = ['external_id', 'title', 'content'];
     foreach ($required as $req) {
         if (!in_array($req, $header, true)) {
             fclose($handle);
@@ -334,7 +536,7 @@ function _parseXlsx(string $path): array|string
         return 'XLSX file is empty';
     }
 
-    $required = ['title', 'content', 'category_id'];
+    $required = ['external_id', 'title', 'content'];
     foreach ($required as $req) {
         if (!in_array($req, $header, true)) {
             return "XLSX header missing required column: {$req}";
