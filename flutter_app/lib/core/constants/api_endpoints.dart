@@ -83,6 +83,20 @@ class ApiEndpoints {
   /// GET ?firebase_uid=xx → articles submitted by this reporter
   static const String myNews = '$baseUrl/api/my_news.php';
 
+  // ── Personalization ───────────────────────────────────────────────────
+  /// GET  ?page=1&limit=15&exclude=1,2,3  → interest-weighted article feed
+  static const String personalizedFeed = '$baseUrl/api/personalized_feed.php';
+
+  /// POST {source, categories:[{category_id,weight}], tags:[{tag,weight}]}
+  static const String updateInterests = '$baseUrl/api/update_interests.php';
+
+  /// GET  ?page=1&limit=20  → user's read history (requires Bearer token)
+  /// POST {news_id, read_percent, time_spent_sec} → record a read event
+  static const String readHistory = '$baseUrl/api/read_history.php';
+
+  /// POST (admin only) {user_id?} → run rule-based personalization engine
+  static const String personalizationEngine = '$baseUrl/api/personalization_engine.php';
+
   // ── Feature Flags ─────────────────────────────────────────────────────
   /// GET ?user_id=xx&platform=app → enabled feature flags
   static const String featureFlags = '$baseUrl/api/v1/feature_flags.php';

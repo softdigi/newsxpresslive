@@ -206,3 +206,9 @@ class NewsService {
 
   void dispose() => _api.dispose();
 }
+
+// ── Convenience re-export so callers only import news_service.dart ───────
+// PersonalizedPage is defined in personalization_service.dart; this alias
+// keeps existing call-sites that already import news_service.dart working.
+export 'personalization_service.dart'
+    show PersonalizationService, PersonalizedPage, ReadHistoryItem, UserInterest;
