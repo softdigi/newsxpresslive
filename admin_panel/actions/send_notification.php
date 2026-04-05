@@ -5,7 +5,7 @@
 // Correct:  sendFCMNotification($title, $body, $data, $topic)
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/auth.php';
-require_once __DIR__ . '/../../../auth/session.php';
+require_once __DIR__ . '/../../auth/session.php';
 require_once __DIR__ . '/../../helpers/notification.php';
 
 requireRole(['super_admin', 'admin']);

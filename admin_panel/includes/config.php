@@ -39,4 +39,4 @@ try {
 }
 
 require_once __DIR__ . '/csrf.php';
-define('ADMIN_URL', '/newsxpresslive_api/admin_panel');
+define('ADMIN_URL', rtrim(getenv('ADMIN_BASE_PATH') ?: '/admin_panel', '/'));

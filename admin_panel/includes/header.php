@@ -17,7 +17,7 @@ header('Content-Type: text/html; charset=UTF-8');
 <head>
   <meta charset="UTF-8">
   <title>Admin Panel - News Xpress Live</title>
-  <link rel="stylesheet" href="/newsxpresslive_api/admin_panel/assets/css/admin.css">
+  <link rel="stylesheet" href="<?= ADMIN_URL ?>/assets/css/admin.css">
 </head>
 
 <body>
@@ -66,52 +66,52 @@ header('Content-Type: text/html; charset=UTF-8');
   <!-- NAVIGATION -->
   <nav class="nav">
 
-    <a href="/newsxpresslive_api/admin_panel/dashboard.php">📊 Dashboard</a>
+    <a href="<?= ADMIN_URL ?>/dashboard.php">📊 Dashboard</a>
 
     <?php if (can(['admin','super_admin'])): ?>
       <div class="nav-section">User Management</div>
-      <a href="/newsxpresslive_api/admin_panel/users/index.php">👥 Users</a>
-      <a href="/newsxpresslive_api/admin_panel/users/create.php">➕ Add User</a>
-      <a href="/newsxpresslive_api/admin_panel/reporters/index.php">📝 Reporter Verification</a>
-      <a href="/newsxpresslive_api/admin_panel/agencies/index.php">🏢 Agencies</a>
+      <a href="<?= ADMIN_URL ?>/users/index.php">👥 Users</a>
+      <a href="<?= ADMIN_URL ?>/users/create.php">➕ Add User</a>
+      <a href="<?= ADMIN_URL ?>/reporters/index.php">📝 Reporter Verification</a>
+      <a href="<?= ADMIN_URL ?>/agencies/index.php">🏢 Agencies</a>
     <?php endif; ?>
 
     <?php if (can(['editor','admin','super_admin'])): ?>
       <div class="nav-section">Content</div>
-      <a href="/newsxpresslive_api/admin_panel/news/pending.php">📰 Pending News</a>
-      <a href="/newsxpresslive_api/admin_panel/news/ai_generate.php">✨ AI News Generator</a>
+      <a href="<?= ADMIN_URL ?>/news/pending.php">📰 Pending News</a>
+      <a href="<?= ADMIN_URL ?>/news/ai_generate.php">✨ AI News Generator</a>
     <?php endif; ?>
 
     <?php if ($_SESSION['admin']['role'] === 'reporter'): ?>
       <div class="nav-section">Reporter</div>
-      <a href="/newsxpresslive_api/admin_panel/reporters/dashboard.php">📝 My Dashboard</a>
-      <a href="/newsxpresslive_api/admin_panel/news/my_news.php">📰 My News</a>
-      <a href="/newsxpresslive_api/admin_panel/news/ai_generate.php">✨ AI News Generator</a>
+      <a href="<?= ADMIN_URL ?>/reporters/dashboard.php">📝 My Dashboard</a>
+      <a href="<?= ADMIN_URL ?>/news/my_news.php">📰 My News</a>
+      <a href="<?= ADMIN_URL ?>/news/ai_generate.php">✨ AI News Generator</a>
     <?php endif; ?>
 
     <div class="nav-section">System</div>
-    <a href="/newsxpresslive_api/admin_panel/notifications/digest.php">🤖 AI Digest</a>
-    <a href="/newsxpresslive_api/admin_panel/viral/index.php">🔥 Viral</a>
-    <a href="/newsxpresslive_api/admin_panel/payouts/index.php">💰 Payouts</a>
-    <a href="/newsxpresslive_api/admin_panel/comments/index.php">💬 Comments</a>
+    <a href="<?= ADMIN_URL ?>/notifications/digest.php">🤖 AI Digest</a>
+    <a href="<?= ADMIN_URL ?>/viral/index.php">🔥 Viral</a>
+    <a href="<?= ADMIN_URL ?>/payouts/index.php">💰 Payouts</a>
+    <a href="<?= ADMIN_URL ?>/comments/index.php">💬 Comments</a>
     <?php if (can(['admin','super_admin'])): ?>
-    <a href="/newsxpresslive_api/admin_panel/settings/ads.php">📢 Ad Manager</a>
+    <a href="<?= ADMIN_URL ?>/settings/ads.php">📢 Ad Manager</a>
     <?php endif; ?>
 
     <?php if (can(['admin','super_admin','editor'])): ?>
     <div class="nav-section">Analytics</div>
-    <a href="/newsxpresslive_api/admin_panel/analytics/overview.php">📊 Overview</a>
-    <a href="/newsxpresslive_api/admin_panel/analytics/heatmap.php">🖱️ Click Heatmap</a>
-    <a href="/newsxpresslive_api/admin_panel/analytics/ab_tests.php">🧪 A/B Tests</a>
+    <a href="<?= ADMIN_URL ?>/analytics/overview.php">📊 Overview</a>
+    <a href="<?= ADMIN_URL ?>/analytics/heatmap.php">🖱️ Click Heatmap</a>
+    <a href="<?= ADMIN_URL ?>/analytics/ab_tests.php">🧪 A/B Tests</a>
     <?php if (can(['admin','super_admin'])): ?>
-    <a href="/newsxpresslive_api/admin_panel/analytics/revenue.php">💰 Revenue</a>
+    <a href="<?= ADMIN_URL ?>/analytics/revenue.php">💰 Revenue</a>
     <?php endif; ?>
-    <a href="/newsxpresslive_api/admin_panel/analytics/traffic.php">📈 Traffic</a>
-    <a href="/newsxpresslive_api/admin_panel/analytics/engagement.php">🤝 Engagement</a>
-    <a href="/newsxpresslive_api/admin_panel/analytics/top_content.php">⭐ Top Content</a>
+    <a href="<?= ADMIN_URL ?>/analytics/traffic.php">📈 Traffic</a>
+    <a href="<?= ADMIN_URL ?>/analytics/engagement.php">🤝 Engagement</a>
+    <a href="<?= ADMIN_URL ?>/analytics/top_content.php">⭐ Top Content</a>
     <?php endif; ?>
 
-    <a href="/newsxpresslive_api/admin_panel/logout.php">🚪 Logout</a>
+    <a href="<?= ADMIN_URL ?>/logout.php">🚪 Logout</a>
 
   </nav>
 

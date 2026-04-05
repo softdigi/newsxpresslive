@@ -188,7 +188,7 @@ function sendFcmNotification(string $token, string $title, string $body, array $
  */
 function sendAgencyPayoutEmail(array $agency, string $payoutMonth): void
 {
-    $baseUrl = getenv('APP_BASE_URL') ?: 'https://newsxpresslive.com';
+    $baseUrl = getenv('APP_BASE_URL') ?: 'https://yourdomain.com';
     $subject = "[NewsXpressLive] Your Payout for {$payoutMonth} Has Been Processed";
     $amount  = number_format((float)$agency['payout_amount'], 2);
 
@@ -202,7 +202,7 @@ function sendAgencyPayoutEmail(array $agency, string $payoutMonth): void
     $body .= "Best regards,\nNewsXpressLive Team\n";
 
     $headers = implode("\r\n", [
-        'From: noreply@newsxpresslive.com',
+        'From: ' . (getenv('MAIL_FROM') ?: 'noreply@yourdomain.com'),
         'Content-Type: text/plain; charset=UTF-8',
         'X-Mailer: NewsXpressLive-Cron/1.0',
     ]);
@@ -215,7 +215,7 @@ function sendAgencyPayoutEmail(array $agency, string $payoutMonth): void
  */
 function sendAdminPayoutSummary(string $adminEmail, string $payoutMonth, array $summary): void
 {
-    $baseUrl = getenv('APP_BASE_URL') ?: 'https://newsxpresslive.com';
+    $baseUrl = getenv('APP_BASE_URL') ?: 'https://yourdomain.com';
     $subject = "[NewsXpressLive] Monthly Agency Payout Summary — {$payoutMonth}";
     $total   = number_format((float)$summary['total_payout_amount'], 2);
 
@@ -233,7 +233,7 @@ function sendAdminPayoutSummary(string $adminEmail, string $payoutMonth, array $
     }
 
     $headers = implode("\r\n", [
-        'From: noreply@newsxpresslive.com',
+        'From: ' . (getenv('MAIL_FROM') ?: 'noreply@yourdomain.com'),
         'Content-Type: text/plain; charset=UTF-8',
         'X-Mailer: NewsXpressLive-Cron/1.0',
     ]);

@@ -2,7 +2,7 @@
 // actions/feature_news.php — FIXED
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/auth.php';
-require_once __DIR__ . '/../../../auth/session.php';
+require_once __DIR__ . '/../../auth/session.php';
 
 requireRole(['super_admin', 'admin']);
 

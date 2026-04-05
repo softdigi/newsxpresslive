@@ -10,16 +10,16 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'newsxpresslive');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_HOST',    getenv('DB_HOST')    ?: 'localhost');
+define('DB_NAME',    getenv('DB_NAME')    ?: 'newsxpresslive');
+define('DB_USER',    getenv('DB_USER')    ?: 'root');
+define('DB_PASS',    getenv('DB_PASS')    ?: '');
 define('DB_CHARSET', 'utf8mb4');
 
 // SECURITY: Do NOT derive SITE_URL from HTTP_HOST – that header can be spoofed
 // (host-header injection → cache poisoning, password-reset link hijacking, etc.).
-// Set this to the exact public URL of the site. Trailing slash omitted intentionally.
-define('SITE_URL', 'http://localhost/web');
+// Set SITE_URL via the SITE_URL environment variable. Trailing slash omitted intentionally.
+define('SITE_URL', rtrim(getenv('SITE_URL') ?: 'https://yourdomain.com', '/'));
 define('SITE_NAME', 'NewsXpressLive');
 define('SITE_TAGLINE', 'Breaking News, Latest Updates');
 define('UPLOADS_URL', SITE_URL . '/uploads/news/');

@@ -278,7 +278,7 @@ function buildSummaryReport(PDO $pdo, string $date): array
  */
 function sendAdminReport(string $email, string $date, array $summary, array $rates): void
 {
-    $baseUrl = getenv('APP_BASE_URL') ?: 'https://newsxpresslive.com';
+    $baseUrl = getenv('APP_BASE_URL') ?: 'https://yourdomain.com';
     $subject = "[NewsXpressLive] Daily Agency Revenue Report — {$date}";
 
     $body  = "Daily Agency Revenue Report\n";
@@ -292,7 +292,7 @@ function sendAdminReport(string $email, string $date, array $summary, array $rat
     $body .= "Admin Panel        : {$baseUrl}/admin/revenue\n";
 
     $headers = implode("\r\n", [
-        'From: noreply@newsxpresslive.com',
+        'From: ' . (getenv('MAIL_FROM') ?: 'noreply@yourdomain.com'),
         'Content-Type: text/plain; charset=UTF-8',
         'X-Mailer: NewsXpressLive-Cron/1.0',
     ]);

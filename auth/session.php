@@ -183,7 +183,7 @@ function _authFail(string $msg, bool $api, string $reason = ''): never
         exit;
     }
 
-    $redirect = defined('ADMIN_URL') ? ADMIN_URL : 'newsxpresslive_api/admin_panel';
+    $redirect = defined('ADMIN_URL') ? ADMIN_URL : '/admin_panel';
     $qs       = $reason ? '?reason=' . urlencode($reason) : '';
     header("Location: {$redirect}/login.php{$qs}");
     exit;

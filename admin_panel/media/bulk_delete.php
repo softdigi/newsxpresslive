@@ -3,7 +3,7 @@
 // Path traversal via file_name from DB
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/auth.php';
-require_once __DIR__ . '/../../../auth/session.php';
+require_once __DIR__ . '/../../auth/session.php';
 
 requireRole(['super_admin', 'admin', 'editor']);
 

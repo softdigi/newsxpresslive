@@ -22,8 +22,8 @@
 header('Content-Type: application/json');
 // FIXED: removed wildcard CORS — admin endpoint must not be public
 
-require_once '../geo/config.php';
-require_once '../geo/response.php';
+require_once __DIR__ . '/../geo/config.php';
+require_once __DIR__ . '/../geo/response.php';
 
 session_start();
 $admin_id = $_SESSION['admin_id'] ?? null;

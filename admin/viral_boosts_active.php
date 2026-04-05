@@ -18,8 +18,8 @@
 header('Content-Type: application/json');
 // FIXED: removed wildcard CORS header — admin endpoint must not be publicly CORS-accessible
 
-require_once '../geo/config.php';
-require_once '../geo/response.php';
+require_once __DIR__ . '/../geo/config.php';
+require_once __DIR__ . '/../geo/response.php';
 
 // FIXED: auth check added
 session_start();

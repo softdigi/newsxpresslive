@@ -1,5 +1,4 @@
 <?php
-// File: /newsxpresslive_api/news/feed.php
 // World-class Personalized Feed with Viral Engine + Trust + Safety
 // Pagination: keyset (cursor) — avoids full-table scans on large datasets.
 

@@ -2,9 +2,9 @@
 header("Content-Type: application/json");
 
 require __DIR__ . "/../geo/config.php";
-require_once __DIR__ . "/../../../auth/firebase.php";
+require_once __DIR__ . "/../auth/firebase.php";
 require __DIR__ . "/../geo/response.php";
-require_once '../../helpers/kill_switch.php';
+require_once __DIR__ . '/../../helpers/kill_switch.php';
 
 checkKillSwitch($pdo, [
     'news_id' => $news_id

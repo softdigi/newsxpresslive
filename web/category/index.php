@@ -1,5 +1,4 @@
 <?php
-// File: /newsxpresslive_api/web/category/index.php
 // Category Page - FINAL (Production Ready)
 
 // ⚠️ PRODUCTION SAFE
@@ -94,7 +93,7 @@ $news_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $page_title       = $category['name'] . " News - Latest Updates | News Xpress Live";
 $page_description = "Get latest " . $category['name'] . " news, breaking updates, and trending stories. Stay updated with real-time coverage.";
 $page_keywords    = $category['name'] . ", latest news, breaking news, India news";
-$canonical_url    = "https://newsxpresslive.com/category/" . $category_slug;
+$canonical_url    = SITE_URL . "/category/" . $category_slug;
 
 include '../includes/header.php';
 ?>
@@ -218,7 +217,7 @@ include '../includes/header.php';
 
 <?php
 generateBreadcrumbSchema([
-    'Home' => 'https://newsxpresslive.com/',
+    'Home' => SITE_URL . '/',
     $category['name'] => $canonical_url
 ]);
 ?>

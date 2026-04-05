@@ -42,7 +42,7 @@ if (!$hasKey): ?>
 <div class="alert alert-warning" style="max-width:850px">
     ⚠️ <strong>No AI API key configured.</strong>
     Please add your <strong>OpenAI</strong> or <strong>Gemini</strong> API key in
-    <a href="/newsxpresslive_api/admin_panel/settings/api_keys.php">Settings → API Keys</a>
+    <a href="<?= ADMIN_URL ?>/settings/api_keys.php">Settings → API Keys</a>
     before using this feature.
 </div>
 <?php endif; ?>
@@ -195,9 +195,13 @@ if (!$hasKey): ?>
 </div><!-- /content-wrapper -->
 
 <script>
+window.SITE_URL  = <?= json_encode(rtrim(getenv('SITE_URL') ?: '', '/')) ?>;
+window.ADMIN_URL = <?= json_encode(ADMIN_URL) ?>;
+</script>
+<script>
 (function () {
     const CSRF  = <?= json_encode(csrf_token()) ?>;
-    const API   = '/newsxpresslive_api/api/v1/ai_generate.php';
+    const API   = (window.SITE_URL || '') + '/api/v1/ai_generate.php';
 
     const topicEl  = document.getElementById('ai-topic');
     const langEl   = document.getElementById('ai-lang');
@@ -327,10 +331,10 @@ if (!$hasKey): ?>
                 successBox.style.display = 'block';
 
                 const viewLink = document.getElementById('ai-view-link');
-                viewLink.href = '/newsxpresslive_api/admin_panel/news/view.php?id=' + data.news_id;
+                viewLink.href = (window.ADMIN_URL || '/admin_panel') + '/news/view.php?id=' + data.news_id;
 
                 const editLink = document.getElementById('ai-edit-link');
-                editLink.href = '/newsxpresslive_api/admin_panel/news/edit.php?id=' + data.news_id;
+                editLink.href = (window.ADMIN_URL || '/admin_panel') + '/news/edit.php?id=' + data.news_id;
                 editLink.style.display = 'inline-block';
 
                 successBox.scrollIntoView({ behavior: 'smooth' });
