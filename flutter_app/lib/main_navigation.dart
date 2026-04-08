@@ -6,6 +6,8 @@ import 'presentation/screens/home/home_screen.dart';
 import 'presentation/screens/search/search_screen.dart';
 import 'presentation/screens/bookmarks/bookmarks_screen.dart';
 import 'presentation/screens/offline/offline_screen.dart';
+import 'presentation/screens/reels/reels_screen.dart';
+import 'presentation/screens/complaints/complaints_screen.dart';
 import 'presentation/screens/settings/settings_screen.dart';
 import 'core/constants/app_strings.dart';
 import 'core/constants/app_colors.dart';
@@ -29,6 +31,8 @@ class MainNavigationState extends State<MainNavigation> {
   static const List<Widget> _screens = [
     HomeScreen(),
     SearchScreen(),
+    ReelsScreen(),
+    ComplaintsScreen(),
     BookmarksScreen(),
     OfflineScreen(),
     SettingsScreen(),
@@ -83,6 +87,16 @@ class MainNavigationState extends State<MainNavigation> {
               icon:       Icon(Icons.search_outlined),
               activeIcon: Icon(Icons.search_rounded),
               label:      AppStrings.navSearch,
+            ),
+            const BottomNavigationBarItem(
+              icon:       Icon(Icons.video_library_outlined),
+              activeIcon: Icon(Icons.video_library_rounded),
+              label:      AppStrings.navReels,
+            ),
+            const BottomNavigationBarItem(
+              icon:       Icon(Icons.campaign_outlined),
+              activeIcon: Icon(Icons.campaign_rounded),
+              label:      AppStrings.navComplaints,
             ),
             BottomNavigationBarItem(
               icon:       _bookmarkIcon(bm.count, false),

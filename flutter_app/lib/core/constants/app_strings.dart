@@ -154,5 +154,37 @@ class AppStrings {
   static const String ttsResume    = 'Resume';
   static const String ttsStop      = 'Stop';
   static const String ttsSpeed     = 'Playback speed';
+
+  // ── Reels ─────────────────────────────────────────────────────────────
+  static const String navReels      = 'Reels';
+  static const String reelsTitle    = 'News Reels';
+  static const String reelLike      = 'Like';
+  static const String reelComment   = 'Comment';
+  static const String reelShare     = 'Share';
+  static const String reelNoReels   = 'No reels available right now.';
+  static const String reelComment_hint = 'Write a comment…';
+  static const String reelCommentName  = 'Your name';
+  static const String reelPostComment  = 'Post';
+  static const String reelCommentSent  = 'Comment submitted for review.';
+
+  // ── Complaints / Public Voice ─────────────────────────────────────────
+  static const String navComplaints         = 'Voice';
+  static const String complaintsTitle       = 'Public Voice';
+  static const String complaintsSubtitle    = 'Report civic issues in your area';
+  static const String complaintSubmitBtn    = 'Report an Issue';
+  static const String complaintTitle        = 'Issue Title';
+  static const String complaintDescription  = 'Describe the issue';
+  static const String complaintCategory     = 'Category';
+  static const String complaintAddPhoto     = 'Add Photo (optional)';
+  static const String complaintSubmitting   = 'Submitting…';
+  static const String complaintSubmitted    = 'Your complaint has been submitted!';
+  static const String complaintVoteSupport  = 'Support';
+  static const String complaintVoted        = 'Supported!';
+  static const String complaintNoItems      = 'No complaints found. Be the first to report an issue!';
+  static const String complaintStatusOpen   = 'Open';
+  static const String complaintStatusReview = 'Under Review';
+  static const String complaintStatusResolved = 'Resolved';
+  static const String complaintNameHint     = 'Your name (optional)';
+  static const String complaintAnonymous    = 'Submit anonymously';
 }
 

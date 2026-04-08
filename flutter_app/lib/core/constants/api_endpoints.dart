@@ -110,4 +110,26 @@ class ApiEndpoints {
   static const String agencyArticles  = '$agencyBase/articles.php';
   static const String agencyRevenue   = '$agencyBase/revenue.php';
   static const String agencyWithdraw  = '$agencyBase/withdraw.php';
+
+  // ── Reels ─────────────────────────────────────────────────────────────
+  /// GET  ?page=1&per_page=5   → paginated published reels
+  /// POST ?action=view&id=N    → increment view count
+  static const String reels        = '$baseUrl/api/reels.php';
+
+  /// POST { reel_id } → toggle like, returns { liked, likes_count }
+  static const String reelLike     = '$baseUrl/api/reel_like.php';
+
+  /// GET  ?reel_id=N           → approved comments for a reel
+  /// POST { reel_id, author_name, content } → submit comment
+  static const String reelComment  = '$baseUrl/api/reel_comment.php';
+
+  // ── Complaints / Public Voice ─────────────────────────────────────────
+  /// GET  ?page=1&category=&district_id= → list complaints
+  static const String complaints       = '$baseUrl/api/complaints.php';
+
+  /// POST { firebase_uid, name, title, description, category, district_id?, photo? }
+  static const String complaintSubmit  = '$baseUrl/api/complaint_submit.php';
+
+  /// POST { complaint_id, firebase_uid } → toggle support/vote
+  static const String complaintVote    = '$baseUrl/api/complaint_vote.php';
 }
