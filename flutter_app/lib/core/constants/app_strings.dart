@@ -186,5 +186,22 @@ class AppStrings {
   static const String complaintStatusResolved = 'Resolved';
   static const String complaintNameHint     = 'Your name (optional)';
   static const String complaintAnonymous    = 'Submit anonymously';
+
+  // ── Social Layer ──────────────────────────────────────────────────────
+  static const String navSocial             = 'Social';
+  static const String socialFeedTitle       = 'Following';
+  static const String socialFeedSubtitle    = 'News from reporters you follow';
+  static const String socialFeedEmpty       = 'Follow reporters to see their stories here.';
+  static const String socialFeedFallback    = 'Showing trending news — follow reporters to personalise this feed.';
+  static const String socialFollow          = 'Follow';
+  static const String socialUnfollow        = 'Unfollow';
+  static const String socialFollowers       = 'Followers';
+  static const String socialFollowing       = 'Following';
+  static const String socialNoFollowers     = 'No followers yet.';
+  static const String socialNoFollowing     = 'Not following anyone yet.';
+  static const String socialUserProfile     = 'Profile';
+  static const String socialReporterProfile = 'Reporter Profile';
+  static const String socialVerified        = 'Verified';
+  static const String socialFollowError     = 'Could not update follow status. Please try again.';
 }
 

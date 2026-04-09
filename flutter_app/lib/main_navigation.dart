@@ -8,7 +8,10 @@ import 'presentation/screens/bookmarks/bookmarks_screen.dart';
 import 'presentation/screens/offline/offline_screen.dart';
 import 'presentation/screens/reels/reels_screen.dart';
 import 'presentation/screens/complaints/complaints_screen.dart';
+import 'presentation/screens/social/social_feed_screen.dart';
 import 'presentation/screens/settings/settings_screen.dart';
+import 'data/services/social_service.dart';
+import 'data/services/api_service.dart';
 import 'core/constants/app_strings.dart';
 import 'core/constants/app_colors.dart';
 
@@ -28,19 +31,25 @@ class MainNavigation extends StatefulWidget {
 class MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
-  static const List<Widget> _screens = [
-    HomeScreen(),
-    SearchScreen(),
-    ReelsScreen(),
-    ComplaintsScreen(),
-    BookmarksScreen(),
-    OfflineScreen(),
-    SettingsScreen(),
+  /// Social service backed by an unauthenticated ApiService by default.
+  /// Screens that need the follow button should receive an ApiService
+  /// with idTokenProvider set (injected via a provider or passed directly).
+  final _socialService = SocialService(api: ApiService());
+
+  static List<Widget> _buildScreens(SocialService socialService) => [
+    const HomeScreen(),
+    const SearchScreen(),
+    const ReelsScreen(),
+    const ComplaintsScreen(),
+    SocialFeedScreen(socialService: socialService),
+    const BookmarksScreen(),
+    const OfflineScreen(),
+    const SettingsScreen(),
   ];
 
   /// Switch to tab [index] from anywhere in the app.
   void switchTab(int index) {
-    if (index < 0 || index >= _screens.length) return;
+    if (index < 0 || index >= _buildScreens(_socialService).length) return;
     setState(() => _currentIndex = index);
   }
 
@@ -58,7 +67,7 @@ class MainNavigationState extends State<MainNavigation> {
           if (vx.abs() < 200 || vy > vx.abs()) return; // too slow or too diagonal
           if (vx < 0) {
             // swipe left → next tab
-            if (_currentIndex < _screens.length - 1) {
+            if (_currentIndex < _buildScreens(_socialService).length - 1) {
               setState(() => _currentIndex++);
             }
           } else {
@@ -70,7 +79,7 @@ class MainNavigationState extends State<MainNavigation> {
         },
         child: IndexedStack(
           index: _currentIndex,
-          children: _screens,
+          children: _buildScreens(_socialService),
         ),
       ),
       bottomNavigationBar: Consumer2<BookmarkProvider, OfflineProvider>(
@@ -97,6 +106,11 @@ class MainNavigationState extends State<MainNavigation> {
               icon:       Icon(Icons.campaign_outlined),
               activeIcon: Icon(Icons.campaign_rounded),
               label:      AppStrings.navComplaints,
+            ),
+            const BottomNavigationBarItem(
+              icon:       Icon(Icons.people_outline_rounded),
+              activeIcon: Icon(Icons.people_rounded),
+              label:      AppStrings.navSocial,
             ),
             BottomNavigationBarItem(
               icon:       _bookmarkIcon(bm.count, false),

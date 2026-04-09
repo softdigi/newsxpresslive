@@ -132,4 +132,18 @@ class ApiEndpoints {
 
   /// POST { complaint_id, firebase_uid } → toggle support/vote
   static const String complaintVote    = '$baseUrl/api/complaint_vote.php';
+
+  // ── Social Layer ──────────────────────────────────────────────────────
+  /// POST  (auth)   { target_uid }  → toggle follow/unfollow
+  ///   returns { success, is_following, followers_count }
+  ///
+  /// GET   (public) ?action=counts   &uid=  → { followers_count, following_count }
+  /// GET   (auth)   ?action=check    &uid=  → { is_following }
+  /// GET   (public) ?action=followers&uid=&page=&per_page= → { users:[...] }
+  /// GET   (public) ?action=following&uid=&page=&per_page= → { users:[...] }
+  static const String follow = '$baseUrl/api/follow.php';
+
+  /// GET (auth) ?page=1&limit=15&exclude=1,2,3
+  ///   → news from followed reporters, fallback to trending
+  static const String socialFeed = '$baseUrl/api/social_feed.php';
 }
