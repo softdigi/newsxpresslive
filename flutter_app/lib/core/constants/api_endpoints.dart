@@ -146,4 +146,20 @@ class ApiEndpoints {
   /// GET (auth) ?page=1&limit=15&exclude=1,2,3
   ///   → news from followed reporters, fallback to trending
   static const String socialFeed = '$baseUrl/api/social_feed.php';
+
+  // ── Mandi Bhav (Agricultural Market Rates) ───────────────────────────
+  /// GET ?mandi_id=1 OR ?lat=&lng= &date= &days= &commodity_id= &category=
+  static const String mandiRates  = '$baseUrl/api/mandi/rates.php';
+
+  /// GET ?commodity_id=1&mandi_id=1&days=30
+  static const String mandiTrend  = '$baseUrl/api/mandi/trend.php';
+
+  /// GET ?lat=&lng=&radius_km=100
+  static const String mandiNearby = '$baseUrl/api/mandi/nearby.php';
+
+  /// GET  ?firebase_uid=
+  /// POST { firebase_uid, commodity_id, mandi_id, alert_type, target_price }
+  /// DELETE ?id=&firebase_uid=
+  /// PATCH  ?id=&firebase_uid=  (toggle is_active)
+  static const String mandiAlert  = '$baseUrl/api/mandi/alert.php';
 }

@@ -187,6 +187,13 @@ class AppStrings {
   static const String complaintNameHint     = 'Your name (optional)';
   static const String complaintAnonymous    = 'Submit anonymously';
 
+  // ── Mandi Bhav ────────────────────────────────────────────────────────
+  static const String navMandi              = 'Mandi';
+  static const String mandiTitle            = 'Mandi Bhav';
+  static const String mandiSelectHint       = 'Select Your Mandi';
+  static const String mandiAlertSet         = 'Alert set successfully';
+  static const String mandiNoRates          = 'No rates available today';
+
   // ── Social Layer ──────────────────────────────────────────────────────
   static const String navSocial             = 'Social';
   static const String socialFeedTitle       = 'Following';

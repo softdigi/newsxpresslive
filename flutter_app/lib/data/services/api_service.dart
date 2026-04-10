@@ -96,6 +96,45 @@ class ApiService {
     }
   }
 
+  // ── DELETE ────────────────────────────────────────────────────────────
+  Future<dynamic> delete(String url) async {
+    final uri = Uri.parse(url);
+    try {
+      final headers = await _buildHeaders();
+      final response = await _client
+          .delete(uri, headers: headers)
+          .timeout(_timeout);
+      return _handleResponse(response);
+    } on SocketException {
+      throw const ApiException('No internet connection');
+    } on HttpException {
+      throw const ApiException('Network error');
+    } on FormatException {
+      throw const ApiException('Invalid server response');
+    }
+  }
+
+  // ── PATCH ─────────────────────────────────────────────────────────────
+  Future<dynamic> patch(String url, {Map<String, dynamic>? body}) async {
+    final uri = Uri.parse(url);
+    try {
+      final headers = {
+        ...await _buildHeaders(),
+        'Content-Type': 'application/json',
+      };
+      final response = await _client
+          .patch(uri, headers: headers, body: jsonEncode(body ?? {}))
+          .timeout(_timeout);
+      return _handleResponse(response);
+    } on SocketException {
+      throw const ApiException('No internet connection');
+    } on HttpException {
+      throw const ApiException('Network error');
+    } on FormatException {
+      throw const ApiException('Invalid server response');
+    }
+  }
+
   // ── POST (multipart — for image upload) ───────────────────────────────
   Future<dynamic> postMultipart(
     String url, {
