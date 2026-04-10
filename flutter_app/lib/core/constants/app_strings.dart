@@ -220,5 +220,21 @@ class AppStrings {
   static const String socialReporterProfile = 'Reporter Profile';
   static const String socialVerified        = 'Verified';
   static const String socialFollowError     = 'Could not update follow status. Please try again.';
+
+  // ── Live News Streaming ───────────────────────────────────────────────
+  static const String navLive              = 'Live';
+  static const String liveTitle            = 'LIVE News';
+  static const String liveTabLive          = 'Live Now';
+  static const String liveTabScheduled     = 'Upcoming';
+  static const String liveTabPast          = 'Past';
+  static const String liveNoStreams        = 'No live streams right now.';
+  static const String liveViewers          = 'watching';
+  static const String liveEnded            = 'Stream Ended';
+  static const String liveScheduled        = 'Scheduled';
+  static const String liveChatHint         = 'Say something…';
+  static const String liveChatSend         = 'Send';
+  static const String liveChatRateLimited  = 'Too many messages. Please slow down.';
+  static const String liveWatchLabel       = 'Watch Live';
+  static const String liveReactLabel       = 'React';
 }
 

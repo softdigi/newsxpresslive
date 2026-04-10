@@ -11,6 +11,7 @@ import 'presentation/screens/complaints/complaints_screen.dart';
 import 'presentation/screens/social/social_feed_screen.dart';
 import 'presentation/screens/mandi/mandi_home_screen.dart';
 import 'presentation/screens/listings/listing_feed_screen.dart';
+import 'presentation/screens/live/live_feed_screen.dart';
 import 'presentation/screens/settings/settings_screen.dart';
 import 'data/services/social_service.dart';
 import 'data/services/api_service.dart';
@@ -42,6 +43,7 @@ class MainNavigationState extends State<MainNavigation> {
     const HomeScreen(),
     const SearchScreen(),
     const ReelsScreen(),
+    const LiveFeedScreen(),
     const MandiHomeScreen(),
     const ListingFeedScreen(),
     const ComplaintsScreen(),
@@ -105,6 +107,11 @@ class MainNavigationState extends State<MainNavigation> {
               icon:       Icon(Icons.video_library_outlined),
               activeIcon: Icon(Icons.video_library_rounded),
               label:      AppStrings.navReels,
+            ),
+            const BottomNavigationBarItem(
+              icon:       Icon(Icons.live_tv_outlined),
+              activeIcon: Icon(Icons.live_tv_rounded),
+              label:      AppStrings.navLive,
             ),
             const BottomNavigationBarItem(
               icon:       Icon(Icons.storefront_outlined),

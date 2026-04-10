@@ -185,4 +185,21 @@ class ApiEndpoints {
   /// DELETE ?firebase_uid=&id=
   /// PATCH  body: { firebase_uid, id, status }
   static const String listingsMyListings = '$baseUrl/api/listings/my_listings.php';
+
+  // ── Live News Streaming ───────────────────────────────────────────────
+  /// GET ?status=live,scheduled&limit=20&cursor=0
+  ///   → paginated live + scheduled + past streams
+  static const String liveFeed      = '$baseUrl/api/live/feed.php';
+
+  /// POST { stream_id, session_id, user_id? }
+  ///   → heartbeat (viewer presence ping); returns viewer_count, chat, reactions
+  static const String liveHeartbeat = '$baseUrl/api/live/heartbeat.php';
+
+  /// POST { stream_id, session_id, emoji? }
+  ///   → send a reaction emoji
+  static const String liveReact     = '$baseUrl/api/live/react.php';
+
+  /// POST { stream_id, session_id, author, message, user_id? }
+  ///   → submit a live chat message
+  static const String liveChat      = '$baseUrl/api/live/chat.php';
 }
