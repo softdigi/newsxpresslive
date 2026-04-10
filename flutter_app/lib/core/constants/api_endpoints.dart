@@ -162,4 +162,27 @@ class ApiEndpoints {
   /// DELETE ?id=&firebase_uid=
   /// PATCH  ?id=&firebase_uid=  (toggle is_active)
   static const String mandiAlert  = '$baseUrl/api/mandi/alert.php';
+
+  // ── Classified & Marketplace ─────────────────────────────────────────
+  /// GET ?category_id=&listing_type=&min_price=&max_price=
+  ///       &state_id=&district_id=&lat=&lng=&radius_km=
+  ///       &search=&cursor=&limit=&featured_first=
+  static const String listingsFeed = '$baseUrl/api/listings/feed.php';
+
+  /// GET ?id=<listing_id>[&firebase_uid=]
+  static const String listingsDetail = '$baseUrl/api/listings/detail.php';
+
+  /// POST (multipart/form-data) — create new listing
+  static const String listingsPost = '$baseUrl/api/listings/post.php';
+
+  /// POST { firebase_uid, listing_id } — toggle save/unsave
+  static const String listingsSave = '$baseUrl/api/listings/save.php';
+
+  /// POST { firebase_uid, listing_id, message, contact_phone }
+  static const String listingsInquire = '$baseUrl/api/listings/inquire.php';
+
+  /// GET ?firebase_uid=&status=&cursor=&limit=
+  /// DELETE ?firebase_uid=&id=
+  /// PATCH  body: { firebase_uid, id, status }
+  static const String listingsMyListings = '$baseUrl/api/listings/my_listings.php';
 }

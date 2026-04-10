@@ -194,6 +194,16 @@ class AppStrings {
   static const String mandiAlertSet         = 'Alert set successfully';
   static const String mandiNoRates          = 'No rates available today';
 
+  // ── Classified & Marketplace ──────────────────────────────────────────
+  static const String navBazaar             = 'Bazaar';
+  static const String bazaarTitle           = 'बाज़ार';
+  static const String bazaarPostBtn         = 'बेचें / दें';
+  static const String bazaarMyListings      = 'मेरे विज्ञापन';
+  static const String bazaarNoListings      = 'कोई विज्ञापन नहीं मिला';
+  static const String bazaarInquirySent     = 'पूछताछ भेज दी गई ✓';
+  static const String bazaarListingPending  = 'विज्ञापन समीक्षा के लिए भेज दिया गया ✓';
+  static const String bazaarListingPosted   = 'विज्ञापन पोस्ट हो गया ✓';
+
   // ── Social Layer ──────────────────────────────────────────────────────
   static const String navSocial             = 'Social';
   static const String socialFeedTitle       = 'Following';

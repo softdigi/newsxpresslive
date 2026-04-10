@@ -10,6 +10,7 @@ import 'presentation/screens/reels/reels_screen.dart';
 import 'presentation/screens/complaints/complaints_screen.dart';
 import 'presentation/screens/social/social_feed_screen.dart';
 import 'presentation/screens/mandi/mandi_home_screen.dart';
+import 'presentation/screens/listings/listing_feed_screen.dart';
 import 'presentation/screens/settings/settings_screen.dart';
 import 'data/services/social_service.dart';
 import 'data/services/api_service.dart';
@@ -42,6 +43,7 @@ class MainNavigationState extends State<MainNavigation> {
     const SearchScreen(),
     const ReelsScreen(),
     const MandiHomeScreen(),
+    const ListingFeedScreen(),
     const ComplaintsScreen(),
     SocialFeedScreen(socialService: socialService),
     const BookmarksScreen(),
@@ -108,6 +110,11 @@ class MainNavigationState extends State<MainNavigation> {
               icon:       Icon(Icons.storefront_outlined),
               activeIcon: Icon(Icons.storefront_rounded),
               label:      AppStrings.navMandi,
+            ),
+            const BottomNavigationBarItem(
+              icon:       Icon(Icons.local_mall_outlined),
+              activeIcon: Icon(Icons.local_mall_rounded),
+              label:      AppStrings.navBazaar,
             ),
             const BottomNavigationBarItem(
               icon:       Icon(Icons.campaign_outlined),
