@@ -6,11 +6,13 @@ import '../../../providers/theme_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/feature_flags_provider.dart';
 import '../../../providers/notification_provider.dart';
+import '../../../providers/language_provider.dart';
 import '../../../data/services/feature_flags_service.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/api_endpoints.dart';
 import '../reporter/submit_news_screen.dart';
+import '../language_selection/language_selection_screen.dart';
 
 /// Settings / preferences screen.
 class SettingsScreen extends StatelessWidget {
@@ -100,6 +102,39 @@ class SettingsScreen extends StatelessWidget {
                 _fontSizeChips(context, theme),
               ],
             ),
+          ),
+
+          const Divider(),
+
+          // ── Languages ────────────────────────────────────────────────
+          _section('Languages'),
+          Consumer<LanguageProvider>(
+            builder: (context, langProv, _) {
+              final selected = langProv.selected;
+              return ListTile(
+                leading: const Icon(Icons.language_rounded,
+                    color: AppColors.primary),
+                title: const Text('News Languages'),
+                subtitle: Text(
+                  selected.isEmpty
+                      ? 'Not set'
+                      : selected.map((c) => c.toUpperCase()).join(', '),
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ChangeNotifierProvider.value(
+                      value: langProv,
+                      child: const LanguageSelectionScreen(
+                        title:    'News Languages',
+                        subtitle: 'Choose languages for your news feed',
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
 
           const Divider(),

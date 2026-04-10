@@ -41,16 +41,27 @@ class NewsProvider extends ChangeNotifier {
   /// When true the feed is fetched in viral-boost mode (?sort=viral).
   bool _viralSort = false;
 
+  /// Language codes for filtering the news feed (e.g. ['hi', 'en']).
+  /// Empty list = no filter (show all languages).
+  List<String> _languageCodes = [];
+
   List<NewsArticle> get articles   => _articles;
   LoadState         get loadState  => _loadState;
   String            get errorMsg   => _errorMsg;
   bool              get hasMore    => _hasMore;
   bool              get isLoading  => _loadState == LoadState.loading;
   bool              get viralSort  => _viralSort;
+  List<String>      get languageCodes => _languageCodes;
 
   /// Toggle viral-boost sort and reload the feed from page 1.
   void toggleViralSort() {
     _viralSort = !_viralSort;
+    loadNewsFeed(reset: true);
+  }
+
+  /// Update language filter and reload the feed from page 1.
+  void setLanguageCodes(List<String> codes) {
+    _languageCodes = codes;
     loadNewsFeed(reset: true);
   }
 
@@ -129,6 +140,7 @@ class NewsProvider extends ChangeNotifier {
         sort:          _viralSort ? 'viral' : null,
         lastId:        _lastId,
         lastCreatedAt: _lastCreatedAt,
+        languageCodes: _languageCodes.isNotEmpty ? _languageCodes : null,
       );
       if (!page.hasMore || page.articles.isEmpty) {
         _hasMore = false;

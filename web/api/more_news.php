@@ -25,6 +25,19 @@ $offset  = ($page - 1) * $per;
 $catSlug = mb_substr(strip_tags(trim($_GET['category'] ?? '')), 0, 200, 'UTF-8');
 $sort    = trim($_GET['sort'] ?? '');    // 'viral' enables feed-boost mode
 
+// ── Language filter (comma-separated codes, e.g. "hi,en,bho") ────────────
+$langRaw    = trim($_GET['languages'] ?? '');
+$langCodes  = [];
+if ($langRaw !== '') {
+    foreach (explode(',', $langRaw) as $lc) {
+        $lc = preg_replace('/[^a-z]/i', '', mb_strtolower(trim($lc)));
+        if (strlen($lc) >= 2 && strlen($lc) <= 10) {
+            $langCodes[] = $lc;
+        }
+    }
+    $langCodes = array_unique(array_slice($langCodes, 0, 12));
+}
+
 // ── Build base WHERE clause ───────────────────────────────────────────
 $where  = 'n.status = :status';
 $params = [':status' => 'approved'];
@@ -32,6 +45,14 @@ $params = [':status' => 'approved'];
 if ($catSlug !== '') {
     $where .= ' AND c.slug = :cat';
     $params[':cat'] = $catSlug;
+}
+
+if (!empty($langCodes)) {
+    $lPlaceholders = implode(',', array_map(fn($i) => ":lang$i", array_keys($langCodes)));
+    $where .= " AND n.language_code IN ($lPlaceholders)";
+    foreach ($langCodes as $i => $lc) {
+        $params[":lang$i"] = $lc;
+    }
 }
 
 // ── Viral feed-boost mode ─────────────────────────────────────────────

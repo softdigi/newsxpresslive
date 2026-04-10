@@ -70,8 +70,12 @@ class ApiEndpoints {
   /// GET ?state_id=1 → districts for a state
   static const String districts = '$baseUrl/geo/districts.php';
 
-  /// GET → all supported languages
+  /// GET → all supported languages (geo legacy endpoint)
   static const String languages = '$baseUrl/geo/languages.php';
+
+  /// GET  → all active supported_languages (12 Indian + English)
+  /// POST (auth) { "languages": ["hi","en","bho"] } → save user preferences
+  static const String newsLanguages = '$baseUrl/api/languages.php';
 
   // ── Reporter ──────────────────────────────────────────────────────────
   /// POST (JSON) firebase_uid, title, description, category_id, language_id, ...

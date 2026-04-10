@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
@@ -14,6 +15,7 @@ import 'providers/onboarding_provider.dart';
 import 'providers/feature_flags_provider.dart';
 import 'providers/tts_provider.dart';
 import 'providers/notification_provider.dart';
+import 'providers/language_provider.dart';
 import 'main_navigation.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/onboarding/onboarding_screen.dart';
@@ -48,6 +50,7 @@ class NewsXpressApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => OnboardingProvider()),
         ChangeNotifierProvider(create: (_) => FeatureFlagsProvider()),
         ChangeNotifierProvider(create: (_) => TtsProvider()),
+        ChangeNotifierProvider(create: (_) => LanguageProvider()..loadFromPrefs()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, theme, child) => MaterialApp(
@@ -56,6 +59,24 @@ class NewsXpressApp extends StatelessWidget {
           theme:                      AppTheme.light,
           darkTheme:                  AppTheme.dark,
           themeMode:                  theme.themeMode,
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('en'),
+            Locale('hi'),
+            Locale('mr'),
+            Locale('gu'),
+            Locale('pa'),
+            Locale('bn'),
+            Locale('te'),
+            Locale('ta'),
+            Locale('kn'),
+            Locale('ml'),
+            Locale('or'),
+          ],
           // Override text scale factor app-wide based on user preference
           builder: (context, widget) {
             final scale = theme.fontScale;

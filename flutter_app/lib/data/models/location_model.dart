@@ -58,16 +58,26 @@ class LanguageModel {
   final int    id;
   final String name;
   final String code;
+  final String nativeName;
+  final String script;
 
-  const LanguageModel({required this.id, required this.name, required this.code});
+  const LanguageModel({
+    required this.id,
+    required this.name,
+    required this.code,
+    this.nativeName = '',
+    this.script     = '',
+  });
 
   factory LanguageModel.fromJson(Map<String, dynamic> j) => LanguageModel(
-    id:   int.tryParse(j['id'].toString()) ?? 0,
-    name: j['name'] as String? ?? '',
-    code: j['code'] as String? ?? '',
+    id:         int.tryParse(j['id'].toString()) ?? 0,
+    name:       j['name']        as String? ?? '',
+    code:       j['code']        as String? ?? '',
+    nativeName: j['native_name'] as String? ?? '',
+    script:     j['script']      as String? ?? '',
   );
 
   @override String toString() => name;
-  @override bool operator ==(Object o) => o is LanguageModel && o.id == id;
-  @override int get hashCode => id.hashCode;
+  @override bool operator ==(Object o) => o is LanguageModel && o.code == code;
+  @override int get hashCode => code.hashCode;
 }

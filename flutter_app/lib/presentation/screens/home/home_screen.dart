@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import '../../providers/news_provider.dart';
+import '../../providers/language_provider.dart';
 import '../widgets/news_card.dart';
 import '../widgets/breaking_ticker.dart';
 import '../widgets/category_chip.dart';
@@ -31,8 +32,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NewsProvider>().init();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final langProv = context.read<LanguageProvider>();
+      await langProv.loadFromPrefs();
+      final newsProv = context.read<NewsProvider>();
+      newsProv.setLanguageCodes(langProv.selected);
+      newsProv.init();
     });
   }
 

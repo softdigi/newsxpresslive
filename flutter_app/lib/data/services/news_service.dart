@@ -43,16 +43,19 @@ class NewsService {
   /// [NewsPage.nextLastCreatedAt] which the caller should forward on the
   /// next call.
   Future<NewsPage> getNewsPage({
-    String? categorySlug,
-    String? sort,
-    int?    lastId,
-    String? lastCreatedAt,
+    String?       categorySlug,
+    String?       sort,
+    int?          lastId,
+    String?       lastCreatedAt,
+    List<String>? languageCodes,
   }) async {
     final params = <String, String>{
       if (categorySlug != null) 'category': categorySlug,
       if (sort != null && sort.isNotEmpty) 'sort': sort,
       if (lastId        != null) 'last_id': lastId.toString(),
       if (lastCreatedAt != null) 'last_created_at': lastCreatedAt,
+      if (languageCodes != null && languageCodes.isNotEmpty)
+        'languages': languageCodes.join(','),
     };
     final data = await _api.get(ApiEndpoints.newsList, queryParams: params);
     if (data is! Map<String, dynamic>) return NewsPage.empty();

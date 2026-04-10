@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/onboarding_provider.dart';
+import '../../../providers/language_provider.dart';
 import '../../../data/models/location_model.dart';
 import '../../../data/models/category.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
+import '../language_selection/language_selection_screen.dart';
 
 /// 3-step onboarding screen:
 ///   Step 1 — Select Location (Country → State → District)
@@ -79,6 +81,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _finish() async {
     final auth = context.read<AuthProvider>();
     final uid  = auth.user?.firebaseUid;
+
+    // Save language preferences locally (and to backend if authenticated)
+    final langProv = context.read<LanguageProvider>();
+    await langProv.save();
+
     if (uid == null) {
       widget.onComplete();
       return;
@@ -248,70 +255,17 @@ class _LocationStep extends StatelessWidget {
 
 // ── Step 2: Languages ─────────────────────────────────────────────────────
 
+/// Embeds [LanguageSelectionScreen] (without its own save button) inside the
+/// onboarding page view.  The LanguageProvider must be available in the tree.
 class _LanguagesStep extends StatelessWidget {
   const _LanguagesStep();
 
   @override
   Widget build(BuildContext context) {
-    final ob = context.watch<OnboardingProvider>();
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _StepHeader(
-            icon:     Icons.language_rounded,
-            title:    AppStrings.stepLanguages,
-            subtitle: 'Choose the languages you read news in',
-          ),
-
-          // Primary language
-          Text(AppStrings.primaryLanguage,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: ob.languages.map((lang) {
-              final selected = ob.primaryLanguage == lang;
-              return ChoiceChip(
-                label:     Text(lang.name),
-                selected:  selected,
-                selectedColor: AppColors.primary,
-                labelStyle: TextStyle(
-                  color: selected ? Colors.white : null,
-                  fontWeight: FontWeight.w600,
-                ),
-                onSelected: (_) => ob.setPrimaryLanguage(lang),
-              );
-            }).toList(),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Secondary languages
-          Text(AppStrings.secondaryLanguages,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: ob.languages
-                .where((l) => l != ob.primaryLanguage)
-                .map((lang) {
-              final selected = ob.secondaryLanguages.contains(lang);
-              return FilterChip(
-                label:     Text(lang.name),
-                selected:  selected,
-                selectedColor: AppColors.primary.withOpacity(0.15),
-                checkmarkColor: AppColors.primary,
-                onSelected: (_) => ob.toggleSecondaryLanguage(lang),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
+    return const LanguageSelectionScreen(
+      showSaveButton: false,
+      title:          'Choose Your Languages',
+      subtitle:       'Aap in languages mein news padhenge',
     );
   }
 }
