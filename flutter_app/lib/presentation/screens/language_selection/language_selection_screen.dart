@@ -75,71 +75,76 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
   Widget build(BuildContext context) {
     final prov = context.watch<LanguageProvider>();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        actions: [
-          if (prov.loadState == LanguageLoadState.saving)
-            const Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.primary,
+    return Directionality(
+      // Language selection screen is always LTR regardless of app language,
+      // so users can read all language names comfortably in a consistent grid.
+      textDirection: TextDirection.ltr,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.title),
+          actions: [
+            if (prov.loadState == LanguageLoadState.saving)
+              const Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header hint
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Text(
-              widget.subtitle,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: Colors.grey[600]),
-            ),
-          ),
-
-          // Search box
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: TextField(
-              controller: _searchCtrl,
-              decoration: InputDecoration(
-                hintText:     'Search languages...',
-                prefixIcon:   const Icon(Icons.search_rounded),
-                border:       OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                suffixIcon: _query.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear_rounded),
-                        onPressed: () => _searchCtrl.clear(),
-                      )
-                    : null,
+          ],
+        ),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header hint
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Text(
+                widget.subtitle,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: Colors.grey[600]),
               ),
             ),
-          ),
 
-          // Grid
-          Expanded(
-            child: _buildGrid(prov),
-          ),
+            // Search box
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: TextField(
+                controller: _searchCtrl,
+                decoration: InputDecoration(
+                  hintText:     'Search languages...',
+                  prefixIcon:   const Icon(Icons.search_rounded),
+                  border:       OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  suffixIcon: _query.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded),
+                          onPressed: () => _searchCtrl.clear(),
+                        )
+                      : null,
+                ),
+              ),
+            ),
 
-          // Selection counter + save button
-          if (widget.showSaveButton) _buildBottomBar(prov),
-        ],
+            // Grid
+            Expanded(
+              child: _buildGrid(prov),
+            ),
+
+            // Selection counter + save button
+            if (widget.showSaveButton) _buildBottomBar(prov),
+          ],
+        ),
       ),
     );
   }
@@ -251,17 +256,23 @@ class _LanguageChip extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              language.nativeName.isNotEmpty
-                  ? language.nativeName
-                  : language.name,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize:   14,
-                color:      isSelected ? Colors.white : null,
+            // Wrap native name in correct directionality
+            Directionality(
+              textDirection: language.isRtl
+                  ? TextDirection.rtl
+                  : TextDirection.ltr,
+              child: Text(
+                language.nativeName.isNotEmpty
+                    ? language.nativeName
+                    : language.name,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize:   14,
+                  color:      isSelected ? Colors.white : null,
+                ),
               ),
             ),
             if (language.nativeName.isNotEmpty &&

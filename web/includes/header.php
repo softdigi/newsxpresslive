@@ -26,9 +26,14 @@ $breakingNews = $breakingStmt->fetchAll();
 
 // Determine current page URL for canonical / nav highlighting
 $currentUrl = SITE_URL . parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+
+// Determine RTL direction from query parameter or session
+$rtlLanguages  = ['ur', 'ar', 'fa'];
+$uiLang        = $_GET['lang'] ?? ($_SESSION['ui_lang'] ?? 'en');
+$pageDirection = in_array($uiLang, $rtlLanguages, true) ? 'rtl' : 'ltr';
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= htmlspecialchars($uiLang, ENT_QUOTES, 'UTF-8') ?>" dir="<?= $pageDirection ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -48,6 +53,10 @@ $currentUrl = SITE_URL . parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH)
     <link rel="sitemap" type="application/xml" href="<?= SITE_URL ?>/news-sitemap.xml.php">
     <!-- Stylesheet -->
     <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css">
+    <?php if ($pageDirection === 'rtl'): ?>
+    <!-- RTL overrides (Urdu / Arabic / Persian) -->
+    <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/rtl.css">
+    <?php endif; ?>
 </head>
 <body>
 

@@ -1,14 +1,21 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show Locale, TextDirection;
 import '../data/models/location_model.dart';
 import '../data/services/language_service.dart';
 import '../data/services/api_service.dart';
 
 enum LanguageLoadState { idle, loading, saving, success, error }
 
+/// RTL language codes — kept in sync with migration_v15_global_languages.sql.
+const Set<String> _rtlCodes = {'ur', 'ar', 'fa'};
+
 /// Manages the user's news-reading language preferences.
 ///
 /// Selected language codes are persisted locally and synced to the backend
 /// when the user is authenticated.
+///
+/// Also exposes [appLocale] and [appTextDirection] so the root MaterialApp
+/// can rebuild when the UI language changes.
 class LanguageProvider extends ChangeNotifier {
   LanguageProvider() : _service = LanguageService(api: ApiService());
 
@@ -16,6 +23,7 @@ class LanguageProvider extends ChangeNotifier {
 
   List<LanguageModel>   _supported   = [];
   List<String>          _selected    = ['hi', 'en'];
+  String                _appLangCode = 'en'; // primary UI language
   LanguageLoadState     _loadState   = LanguageLoadState.idle;
   String?               _errorMsg;
 
@@ -25,10 +33,21 @@ class LanguageProvider extends ChangeNotifier {
   String?               get errorMsg    => _errorMsg;
   bool get isSaving => _loadState == LanguageLoadState.saving;
 
+  /// The current UI locale derived from [_appLangCode].
+  Locale get appLocale => Locale(_appLangCode);
+
+  /// Whether the current UI language is RTL.
+  bool get isRtl => _rtlCodes.contains(_appLangCode);
+
+  /// Flutter [TextDirection] for the current UI language.
+  TextDirection get textDirection =>
+      isRtl ? TextDirection.rtl : TextDirection.ltr;
+
   // ── Initialise ────────────────────────────────────────────────────────────
 
   Future<void> init() async {
-    _selected = await _service.getSelectedCodes();
+    _selected    = await _service.getSelectedCodes();
+    _appLangCode = _selected.isNotEmpty ? _selected.first : 'en';
     notifyListeners();
     await loadSupported();
   }
@@ -62,6 +81,10 @@ class LanguageProvider extends ChangeNotifier {
 
   bool isSelected(String code) => _selected.contains(code);
 
+  // ── Check if a language is RTL ─────────────────────────────────────────────
+
+  static bool isRtlCode(String code) => _rtlCodes.contains(code);
+
   // ── Save ───────────────────────────────────────────────────────────────────
 
   Future<bool> save() async {
@@ -70,7 +93,9 @@ class LanguageProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _service.saveSelectedCodes(_selected);
-      _loadState = LanguageLoadState.success;
+      // Update UI locale to first selected language
+      _appLangCode = _selected.isNotEmpty ? _selected.first : 'en';
+      _loadState   = LanguageLoadState.success;
       notifyListeners();
       return true;
     } catch (_) {
@@ -84,7 +109,8 @@ class LanguageProvider extends ChangeNotifier {
   // ── Initialise from saved codes (no network) ──────────────────────────────
 
   Future<void> loadFromPrefs() async {
-    _selected = await _service.getSelectedCodes();
+    _selected    = await _service.getSelectedCodes();
+    _appLangCode = _selected.isNotEmpty ? _selected.first : 'en';
     notifyListeners();
   }
 

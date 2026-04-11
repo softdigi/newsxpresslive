@@ -4,7 +4,7 @@
  * Multi-language support API
  *
  * GET  → Returns all active supported_languages ordered by sort_order.
- *   Response: { "success": true, "languages": [ { id, code, name, native_name, script } ] }
+ *   Response: { "success": true, "languages": [ { id, code, name, native_name, script, direction } ] }
  *
  * POST → Save user language preferences.
  *   Body (JSON): { "languages": ["hi", "en", "bho"] }
@@ -36,7 +36,8 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     try {
         $stmt = $pdo->query(
-            "SELECT id, code, name, native_name, script, sort_order
+            "SELECT id, code, name, native_name, script, sort_order,
+                    COALESCE(direction, 'ltr') AS direction
                FROM supported_languages
               WHERE is_active = 1
               ORDER BY sort_order ASC, name ASC"

@@ -54,13 +54,14 @@ class NewsXpressApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LanguageProvider()..loadFromPrefs()),
         ChangeNotifierProvider(create: (_) => PollProvider()),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, theme, child) => MaterialApp(
+      child: Consumer2<ThemeProvider, LanguageProvider>(
+        builder: (context, theme, lang, child) => MaterialApp(
           title:                      AppStrings.appName,
           debugShowCheckedModeBanner: false,
           theme:                      AppTheme.light,
           darkTheme:                  AppTheme.dark,
           themeMode:                  theme.themeMode,
+          locale:                     lang.appLocale,
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
@@ -78,15 +79,30 @@ class NewsXpressApp extends StatelessWidget {
             Locale('kn'),
             Locale('ml'),
             Locale('or'),
+            // Global languages added in v15
+            Locale('ur'),
+            Locale('ar'),
+            Locale('fa'),
+            Locale('es'),
+            Locale('fr'),
+            Locale('de'),
+            Locale('pt'),
+            Locale('ru'),
+            Locale('zh'),
+            Locale('ja'),
+            Locale('ko'),
           ],
-          // Override text scale factor app-wide based on user preference
+          // Override text scale factor and apply RTL Directionality app-wide
           builder: (context, widget) {
             final scale = theme.fontScale;
-            return MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                textScaler: TextScaler.linear(scale),
+            return Directionality(
+              textDirection: lang.textDirection,
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(scale),
+                ),
+                child: widget!,
               ),
-              child: widget!,
             );
           },
           home: child,

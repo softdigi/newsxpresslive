@@ -60,6 +60,7 @@ class LanguageModel {
   final String code;
   final String nativeName;
   final String script;
+  final String direction; // 'ltr' or 'rtl'
 
   const LanguageModel({
     required this.id,
@@ -67,7 +68,10 @@ class LanguageModel {
     required this.code,
     this.nativeName = '',
     this.script     = '',
+    this.direction  = 'ltr',
   });
+
+  bool get isRtl => direction == 'rtl';
 
   factory LanguageModel.fromJson(Map<String, dynamic> j) => LanguageModel(
     id:         int.tryParse(j['id'].toString()) ?? 0,
@@ -75,6 +79,7 @@ class LanguageModel {
     code:       j['code']        as String? ?? '',
     nativeName: j['native_name'] as String? ?? '',
     script:     j['script']      as String? ?? '',
+    direction:  j['direction']   as String? ?? 'ltr',
   );
 
   @override String toString() => name;
