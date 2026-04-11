@@ -206,4 +206,21 @@ class ApiEndpoints {
   /// POST { stream_id, session_id, author, message, user_id? }
   ///   → submit a live chat message
   static const String liveChat      = '$baseUrl/api/live/chat.php';
+
+  // ── Polls ─────────────────────────────────────────────────────────────
+  /// GET  ?news_id=N&firebase_uid=UID → polls for an article
+  /// GET  ?poll_id=N&firebase_uid=UID → single poll with results
+  /// GET  ?list=1&page=1&firebase_uid=UID → paginated poll list
+  static const String polls     = '$baseUrl/api/polls.php';
+
+  /// POST { poll_id, option_index, firebase_uid } → cast / update vote
+  static const String pollVote  = '$baseUrl/api/polls.php';
+
+  // ── Daily Quiz ────────────────────────────────────────────────────────
+  /// GET  ?firebase_uid=UID               → today's quiz + user attempt
+  /// GET  ?history=1&firebase_uid=UID     → attempt history
+  static const String quiz       = '$baseUrl/api/quiz.php';
+
+  /// POST { quiz_id, selected_index, firebase_uid } → submit answer
+  static const String quizSubmit = '$baseUrl/api/quiz.php';
 }

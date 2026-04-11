@@ -12,6 +12,7 @@ import 'presentation/screens/social/social_feed_screen.dart';
 import 'presentation/screens/mandi/mandi_home_screen.dart';
 import 'presentation/screens/listings/listing_feed_screen.dart';
 import 'presentation/screens/live/live_feed_screen.dart';
+import 'presentation/screens/quiz/quiz_screen.dart';
 import 'presentation/screens/settings/settings_screen.dart';
 import 'data/services/social_service.dart';
 import 'data/services/api_service.dart';
@@ -48,6 +49,7 @@ class MainNavigationState extends State<MainNavigation> {
     const ListingFeedScreen(),
     const ComplaintsScreen(),
     SocialFeedScreen(socialService: socialService),
+    const QuizScreen(),
     const BookmarksScreen(),
     const OfflineScreen(),
     const SettingsScreen(),
@@ -132,6 +134,11 @@ class MainNavigationState extends State<MainNavigation> {
               icon:       Icon(Icons.people_outline_rounded),
               activeIcon: Icon(Icons.people_rounded),
               label:      AppStrings.navSocial,
+            ),
+            const BottomNavigationBarItem(
+              icon:       Icon(Icons.quiz_outlined),
+              activeIcon: Icon(Icons.quiz_rounded),
+              label:      AppStrings.navQuiz,
             ),
             BottomNavigationBarItem(
               icon:       _bookmarkIcon(bm.count, false),

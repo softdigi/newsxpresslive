@@ -236,5 +236,28 @@ class AppStrings {
   static const String liveChatRateLimited  = 'Too many messages. Please slow down.';
   static const String liveWatchLabel       = 'Watch Live';
   static const String liveReactLabel       = 'React';
+
+  // ── Polls ─────────────────────────────────────────────────────────────
+  static const String pollTitle            = 'Poll';
+  static const String pollVoteButton       = 'Vote';
+  static const String pollVoted            = 'You voted';
+  static const String pollVoteError        = 'Could not record your vote. Please try again.';
+  static const String pollTotalVotes       = 'votes';
+  static const String pollEnded            = 'Poll closed';
+  static const String pollAuthRequired     = 'Sign in to vote';
+
+  // ── Daily Quiz ────────────────────────────────────────────────────────
+  static const String navQuiz              = 'Quiz';
+  static const String quizTitle            = 'Daily Quiz';
+  static const String quizSubmitButton     = 'Submit Answer';
+  static const String quizCorrect          = '🎉 Correct! +10 pts';
+  static const String quizWrong            = '😕 Incorrect';
+  static const String quizAlreadyAnswered  = 'You already answered today\'s quiz';
+  static const String quizNoQuiz           = 'No quiz today. Check back tomorrow!';
+  static const String quizExplanation      = 'Explanation';
+  static const String quizCorrectAnswer    = 'Correct answer';
+  static const String quizHistoryTitle     = 'My Quiz History';
+  static const String quizHistoryEmpty     = 'No quiz history yet. Start with today\'s quiz!';
+  static const String quizLoadError        = 'Could not load quiz. Please try again.';
 }
 

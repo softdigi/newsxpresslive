@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../widgets/poll_widget.dart';
 import 'article_detail_controller.dart';
 import 'widgets/article_actions_widget.dart';
 import 'widgets/article_content_widget.dart';
@@ -88,6 +89,9 @@ class _ArticleDetailView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ArticleContentWidget(article: art),
+
+                  // ── Polls ──────────────────────────────────────────────
+                  PollWidget(newsId: art.id),
 
                   const Divider(height: 32),
 

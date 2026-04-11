@@ -16,6 +16,7 @@ import 'providers/feature_flags_provider.dart';
 import 'providers/tts_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/language_provider.dart';
+import 'providers/poll_provider.dart';
 import 'main_navigation.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/onboarding/onboarding_screen.dart';
@@ -51,6 +52,7 @@ class NewsXpressApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => FeatureFlagsProvider()),
         ChangeNotifierProvider(create: (_) => TtsProvider()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()..loadFromPrefs()),
+        ChangeNotifierProvider(create: (_) => PollProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, theme, child) => MaterialApp(
