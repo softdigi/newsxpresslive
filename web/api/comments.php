@@ -5,7 +5,8 @@
  * Returns all approved comments (flat, threaded by parent_id) for the Flutter app.
  */
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
+require_once __DIR__ . '/../../helpers/cors.php';
+corsHeaders();
 
 require_once __DIR__ . '/../includes/config.php';
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/models/news_article.dart';
 import '../../../data/models/comment.dart';
 import '../../../data/services/api_service.dart';
@@ -65,8 +66,42 @@ class ArticleDetailController extends ChangeNotifier {
 
   void _init() {
     loadArticle();
+    _restoreCommentDraft();
     AnalyticsService.instance.logArticleOpen(0, slug, null);
     SmartNotificationService.instance.recordEngagement();
+  }
+
+  // ── Comment form persistence ───────────────────────────────────────────
+
+  String get _prefKeyName    => 'comment_draft_name';
+  String get _prefKeyEmail   => 'comment_draft_email';
+  String get _prefKeyContent => 'comment_draft_content_$slug';
+
+  Future<void> _restoreCommentDraft() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      nameCtrl.text    = prefs.getString(_prefKeyName)    ?? '';
+      emailCtrl.text   = prefs.getString(_prefKeyEmail)   ?? '';
+      contentCtrl.text = prefs.getString(_prefKeyContent) ?? '';
+    } catch (_) {}
+  }
+
+  Future<void> _saveCommentDraft() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefKeyName,    nameCtrl.text);
+      await prefs.setString(_prefKeyEmail,   emailCtrl.text);
+      await prefs.setString(_prefKeyContent, contentCtrl.text);
+    } catch (_) {}
+  }
+
+  Future<void> _clearCommentDraft() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_prefKeyName);
+      await prefs.remove(_prefKeyEmail);
+      await prefs.remove(_prefKeyContent);
+    } catch (_) {}
   }
 
   // ── Typing ─────────────────────────────────────────────────────────────
@@ -81,6 +116,7 @@ class ArticleDetailController extends ChangeNotifier {
         displayName: name.isEmpty ? 'Someone' : name,
       );
     }
+    _saveCommentDraft();
   }
 
   // ── Article loading ────────────────────────────────────────────────────
@@ -189,6 +225,7 @@ class ArticleDetailController extends ChangeNotifier {
         nameCtrl.clear();
         emailCtrl.clear();
         contentCtrl.clear();
+        await _clearCommentDraft();
         await AnalyticsService.instance.logCommentPost(_article!.id);
       }
     } on ApiException catch (e) {

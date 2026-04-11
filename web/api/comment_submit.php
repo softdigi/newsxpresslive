@@ -18,6 +18,8 @@
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../../helpers/redis.php';
+require_once __DIR__ . '/../../helpers/csrf.php';
 
 // ── Only accept POST ──────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -26,40 +28,67 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// ── Rate limit: max 5 comments per IP per 10 minutes ─────────────────
+// ── FIX 7: Verify CSRF token for web form submissions ────────────────
+// Skip CSRF check for requests from the mobile app (Authorization: Bearer)
+$is_app_request = !empty($_SERVER['HTTP_AUTHORIZATION'])
+    && str_starts_with($_SERVER['HTTP_AUTHORIZATION'], 'Bearer ');
+if (!$is_app_request) {
+    verifyCsrf();
+}
+
+// ── FIX 4: Rate limit via Redis — max 5 comments per IP per 10 minutes ──────
+// Using Redis INCR + EXPIRE provides O(1) rate checking with no DB writes,
+// no table bloat, no cleanup jobs, and atomic counter increments.
 $ip          = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 $ip_hash     = hash('sha256', $ip);
 $window_secs = 600; // 10 minutes
 $max_per_win = 5;
+$rate_key    = 'comment_rl:' . $ip_hash;
 
+$redis_available = false;
 try {
-    // Clean old records
-    $pdo->prepare(
-        'DELETE FROM comment_rate_limit WHERE created_at < DATE_SUB(NOW(), INTERVAL ? SECOND)'
-    )->execute([$window_secs]);
+    $redis = getRedis();
+    $redis_available = true;
 
-    $countStmt = $pdo->prepare(
-        'SELECT COUNT(*) FROM comment_rate_limit WHERE ip_hash = ?'
-    );
-    $countStmt->execute([$ip_hash]);
-    if ((int)$countStmt->fetchColumn() >= $max_per_win) {
+    $count = (int)$redis->get($rate_key);
+    if ($count >= $max_per_win) {
+        $ttl = $redis->ttl($rate_key);
+        $wait = $ttl > 0 ? ceil($ttl / 60) : 10;
         http_response_code(429);
-        echo json_encode(['success' => false, 'message' => 'Too many comments. Please wait a few minutes.']);
+        header('Retry-After: ' . ($ttl > 0 ? $ttl : $window_secs));
+        echo json_encode(['success' => false, 'message' => "Too many comments. Please wait {$wait} minute(s)."]);
         exit;
     }
-} catch (PDOException $e) {
-    // Table may not exist yet — create it silently and continue
+} catch (Exception $e) {
+    // Redis unavailable — fall back to MySQL rate limiting below
+    error_log('Redis unavailable for comment rate limit: ' . $e->getMessage());
+}
+
+if (!$redis_available) {
+    // MySQL fallback rate limit
     try {
-        $pdo->exec(
-            'CREATE TABLE IF NOT EXISTS comment_rate_limit (
-                id         INT AUTO_INCREMENT PRIMARY KEY,
-                ip_hash    VARCHAR(64) NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_ip_time (ip_hash, created_at)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
-        );
-    } catch (PDOException $e2) {
-        // Ignore — proceed without rate limiting if table creation fails
+        $pdo->prepare(
+            'DELETE FROM comment_rate_limit WHERE created_at < DATE_SUB(NOW(), INTERVAL ? SECOND)'
+        )->execute([$window_secs]);
+        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM comment_rate_limit WHERE ip_hash = ?');
+        $countStmt->execute([$ip_hash]);
+        if ((int)$countStmt->fetchColumn() >= $max_per_win) {
+            http_response_code(429);
+            echo json_encode(['success' => false, 'message' => 'Too many comments. Please wait a few minutes.']);
+            exit;
+        }
+    } catch (PDOException $e) {
+        // Table may not exist — create it silently
+        try {
+            $pdo->exec(
+                'CREATE TABLE IF NOT EXISTS comment_rate_limit (
+                    id         INT AUTO_INCREMENT PRIMARY KEY,
+                    ip_hash    VARCHAR(64) NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_ip_time (ip_hash, created_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+            );
+        } catch (PDOException $e2) { /* ignore */ }
     }
 }
 
@@ -137,11 +166,18 @@ try {
         $ip_hash,   // store hash, not raw IP
     ]);
 
-    // Log this submission for rate limiting
-    try {
-        $pdo->prepare('INSERT INTO comment_rate_limit (ip_hash) VALUES (?)')->execute([$ip_hash]);
-    } catch (PDOException $e) {
-        // Non-fatal
+    // Increment rate limit counter (Redis or MySQL fallback)
+    if ($redis_available) {
+        try {
+            $newCount = $redis->incr($rate_key);
+            if ($newCount === 1) {
+                $redis->expire($rate_key, $window_secs);
+            }
+        } catch (Exception $e) { /* non-fatal */ }
+    } else {
+        try {
+            $pdo->prepare('INSERT INTO comment_rate_limit (ip_hash) VALUES (?)')->execute([$ip_hash]);
+        } catch (PDOException $e) { /* non-fatal */ }
     }
 
     echo json_encode([

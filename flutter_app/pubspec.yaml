@@ -96,6 +96,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/lottie/
 
   # Uncomment when font files are added:
   # fonts:

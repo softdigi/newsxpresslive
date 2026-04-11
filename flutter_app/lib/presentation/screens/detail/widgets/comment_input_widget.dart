@@ -23,48 +23,65 @@ class CommentInputWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isSuccess = commMsg.contains('submitted') || commMsg.contains('Thank you');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppStrings.leaveComment,
-            style: Theme.of(context).textTheme.titleLarge),
+        Semantics(
+          header: true,
+          child: Text(AppStrings.leaveComment,
+              style: Theme.of(context).textTheme.titleLarge),
+        ),
         const SizedBox(height: 12),
 
-        TextField(
-          controller:      nameCtrl,
-          decoration: const InputDecoration(
-              labelText: AppStrings.commentNameHint),
-          textInputAction: TextInputAction.next,
+        Semantics(
+          label: AppStrings.commentNameHint,
+          textField: true,
+          child: TextField(
+            controller:      nameCtrl,
+            decoration: const InputDecoration(
+                labelText: AppStrings.commentNameHint),
+            textInputAction: TextInputAction.next,
+          ),
         ),
         const SizedBox(height: 10),
 
-        TextField(
-          controller:      emailCtrl,
-          decoration: const InputDecoration(
-              labelText: AppStrings.commentEmailHint),
-          keyboardType:    TextInputType.emailAddress,
-          textInputAction: TextInputAction.next,
+        Semantics(
+          label: AppStrings.commentEmailHint,
+          textField: true,
+          child: TextField(
+            controller:      emailCtrl,
+            decoration: const InputDecoration(
+                labelText: AppStrings.commentEmailHint),
+            keyboardType:    TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+          ),
         ),
         const SizedBox(height: 10),
 
-        TextField(
-          controller: contentCtrl,
-          decoration: const InputDecoration(
-              labelText: AppStrings.commentContentHint),
-          maxLines:   4,
-          maxLength:  1000,
+        Semantics(
+          label: AppStrings.commentContentHint,
+          textField: true,
+          child: TextField(
+            controller: contentCtrl,
+            decoration: const InputDecoration(
+                labelText: AppStrings.commentContentHint),
+            maxLines:   4,
+            maxLength:  1000,
+          ),
         ),
 
         if (commMsg.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              commMsg,
-              style: TextStyle(
-                color:    commMsg.contains('submitted')
-                    ? Colors.green
-                    : Colors.red,
-                fontSize: 13,
+          Semantics(
+            liveRegion: true,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                commMsg,
+                style: TextStyle(
+                  color:    isSuccess ? Colors.green : Colors.red,
+                  fontSize: 13,
+                ),
               ),
             ),
           ),
@@ -72,15 +89,20 @@ class CommentInputWidget extends StatelessWidget {
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
-          child: ElevatedButton(
-            onPressed: submitting ? null : onSubmit,
-            child: submitting
-                ? const SizedBox(
-                    height: 18,
-                    width:  18,
-                    child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2))
-                : const Text(AppStrings.postComment),
+          child: Semantics(
+            label: AppStrings.postComment,
+            button: true,
+            enabled: !submitting,
+            child: ElevatedButton(
+              onPressed: submitting ? null : onSubmit,
+              child: submitting
+                  ? const SizedBox(
+                      height: 18,
+                      width:  18,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2))
+                  : const Text(AppStrings.postComment),
+            ),
           ),
         ),
       ],

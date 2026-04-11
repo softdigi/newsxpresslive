@@ -47,6 +47,11 @@ $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     PDO::ATTR_EMULATE_PREPARES   => false,
+    // TIER 2: Connection pooling — reuse persistent connections across PHP-FPM
+    // workers instead of opening a new TCP connection on every request.
+    // NOTE: disable this if you use a dedicated connection pooler (PgBouncer /
+    // ProxySQL) in front of MySQL, as poolers manage their own connections.
+    PDO::ATTR_PERSISTENT         => (bool)(getenv('DB_PERSISTENT') ?: true),
 ];
 
 try {
