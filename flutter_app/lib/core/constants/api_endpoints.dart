@@ -223,4 +223,29 @@ class ApiEndpoints {
 
   /// POST { quiz_id, selected_index, firebase_uid } → submit answer
   static const String quizSubmit = '$baseUrl/api/quiz.php';
+
+  // ── Blue Tick Verification ────────────────────────────────────────────────
+
+  /// GET ?type=tv|print|... &q=<search> → media channels for dropdown
+  static const String verificationChannels = '$baseUrl/api/verification/channels.php';
+
+  /// POST (multipart) — submit KYC documents for reporter/agency
+  static const String verificationSubmit   = '$baseUrl/api/verification/submit.php';
+
+  /// GET (auth) → current verification + blue-tick status for user
+  static const String verificationStatus   = '$baseUrl/api/verification/status.php';
+
+  /// GET → list all active blue-tick plans with early-bird info
+  static const String blueTickPlans    = '$baseUrl/api/blue_tick/plans.php';
+
+  /// POST (auth) { plan_id, [payment_id, order_id] } → purchase / request plan
+  static const String blueTickPurchase = '$baseUrl/api/blue_tick/purchase.php';
+
+  /// GET  (auth, agency) → list assignments
+  /// POST (auth, agency) { reporter_uid, action: assign|revoke }
+  static const String blueTickAssign   = '$baseUrl/api/blue_tick/assign.php';
+
+  /// GET  (auth) → reporter/agency profile + blue-tick status
+  /// POST (auth) { display_name?, bio?, avatar_url?, ... } → update profile
+  static const String blueTickProfile  = '$baseUrl/api/blue_tick/profile.php';
 }
