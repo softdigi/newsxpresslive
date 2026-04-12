@@ -79,6 +79,9 @@ dependencies:
   # ── Text-to-Speech ────────────────────────────────────────────────────
   flutter_tts: ^4.0.2
 
+  # ── In-App Review (Android native Play Store dialog) ─────────────────
+  in_app_review: ^2.0.9
+
   # ── Deep linking ──────────────────────────────────────────────────────
   app_links: ^6.3.2
 

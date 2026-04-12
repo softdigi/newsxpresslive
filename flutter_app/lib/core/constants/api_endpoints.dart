@@ -248,4 +248,20 @@ class ApiEndpoints {
   /// GET  (auth) → reporter/agency profile + blue-tick status
   /// POST (auth) { display_name?, bio?, avatar_url?, ... } → update profile
   static const String blueTickProfile  = '$baseUrl/api/blue_tick/profile.php';
+
+  // ── Leaderboard ───────────────────────────────────────────────────────
+  /// GET ?type=weekly|all_time&category=all&page=1&per_page=10
+  ///   → reporter leaderboard
+  /// GET ?action=my_rank&type=weekly  (auth) → logged-in reporter's rank
+  static const String leaderboard = '$baseUrl/api/leaderboard.php';
+
+  // ── Badges ────────────────────────────────────────────────────────────
+  /// GET  (auth) → all badges with locked/unlocked status
+  /// GET  ?action=profile_top&uid=<firebase_uid> → top 3 for profile
+  static const String badges = '$baseUrl/api/badges.php';
+
+  // ── Moderation ────────────────────────────────────────────────────────
+  /// GET  (auth) → reporter's active strikes with appeal status
+  /// POST ?action=appeal  (auth) { strike_id, reason } → submit appeal
+  static const String myStrikes = '$baseUrl/api/moderation/my_strikes.php';
 }
