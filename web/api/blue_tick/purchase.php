@@ -52,6 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 require_once __DIR__ . '/../../includes/config.php';
 require_once __DIR__ . '/../../../auth/firebase.php';
+require_once __DIR__ . '/../../../helpers/early_bird_slot.php';
+require_once __DIR__ . '/../../../helpers/redis.php';
 
 // ── Authentication ─────────────────────────────────────────────────────────
 $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
@@ -120,35 +122,42 @@ $isEarlyBird = false;
 $ebSlot      = null;
 
 if ($isFree) {
-    // Atomically claim a slot
+    // ── Atomically claim an early-bird slot ───────────────────────────────
+    // Redis INCR is the primary path (lock-free, O(1)).
+    // MySQL FOR UPDATE is the automatic fallback when Redis is unavailable.
     $ebType = str_starts_with($plan['plan_type'], 'reporter') ? 'reporter' : 'agency';
-    $pdo->beginTransaction();
+
+    // Fetch the authoritative free_limit for this type
+    $limitRow = $pdo->prepare(
+        "SELECT free_limit FROM early_bird_counters WHERE type = ? LIMIT 1"
+    );
+    $limitRow->execute([$ebType]);
+    $freeLimit = (int)($limitRow->fetchColumn() ?: 100);
+
+    // Try Redis; fall back to MySQL if unavailable
+    $redis = null;
     try {
-        $ebStmt = $pdo->prepare(
-            "SELECT count, free_limit FROM early_bird_counters WHERE type=? FOR UPDATE"
-        );
-        $ebStmt->execute([$ebType]);
-        $eb = $ebStmt->fetch(PDO::FETCH_ASSOC);
+        $redis = getRedis();
+    } catch (RuntimeException $e) {
+        // Redis unavailable — EarlyBirdSlotManager will use MySQL path
+    }
 
-        if (!$eb || (int)$eb['count'] >= (int)$eb['free_limit']) {
-            $pdo->rollBack();
-            http_response_code(410);
-            echo json_encode(['success' => false, 'message' => 'Free early-bird slots exhausted']);
-            exit;
-        }
-        $newCount = (int)$eb['count'] + 1;
-        $pdo->prepare("UPDATE early_bird_counters SET count=? WHERE type=?")
-            ->execute([$newCount, $ebType]);
-
-        $isEarlyBird = true;
-        $ebSlot      = $newCount;
-        $pdo->commit();
+    try {
+        $ebResult = EarlyBirdSlotManager::claimSlot($ebType, $freeLimit, $pdo, $redis);
     } catch (Exception $e) {
-        $pdo->rollBack();
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Server error, please retry']);
         exit;
     }
+
+    if (!$ebResult['success']) {
+        http_response_code(410);
+        echo json_encode(['success' => false, 'message' => $ebResult['message']]);
+        exit;
+    }
+
+    $isEarlyBird = true;
+    $ebSlot      = $ebResult['slot'];
 
     // Record purchase
     $pdo->prepare(
