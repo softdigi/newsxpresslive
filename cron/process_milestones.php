@@ -5,8 +5,9 @@
  * Har 15 minute mein run karo.
  * Active users ke liye milestone check karo aur grant karo.
  *
- * Crontab entry:
- *   */15 * * * * php /path/to/cron/process_milestones.php >> /var/log/milestones.log 2>&1
+ * Crontab entry (note: remove the space between * and /15 — required here
+ * to avoid prematurely closing this PHP block comment):
+ *   * /15 * * * * php /path/to/cron/process_milestones.php >> /var/log/milestones.log 2>&1
  */
 
 declare(strict_types=1);
