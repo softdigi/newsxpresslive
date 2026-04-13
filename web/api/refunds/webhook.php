@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../../helpers/cors.php';
 require_once __DIR__ . '/../../../helpers/security_headers.php';
+require_once __DIR__ . '/../../../helpers/webhook.php';
 require_once __DIR__ . '/../../../web/includes/config.php';
 require_once __DIR__ . '/../../../helpers/refund_service.php';
 require_once __DIR__ . '/../../../helpers/email_service.php';
@@ -25,9 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit('Method not allowed');
 }
 
-$rawBody  = file_get_contents('php://input');
+$rawBody   = file_get_contents('php://input');
 $signature = $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'] ?? '';
-$secret    = getenv('RAZORPAY_WEBHOOK_SECRET') ?: '';
+
+// Verify HMAC signature before processing any payload
+if (!verifyRazorpayWebhook($rawBody, $signature)) {
+    http_response_code(403);
+    exit('Invalid signature');
+}
 
 $payload = json_decode($rawBody, true);
 if (!is_array($payload)) {
@@ -36,7 +42,7 @@ if (!is_array($payload)) {
 }
 
 $refundService = RefundService::getInstance($pdo);
-$ok = $refundService->handleWebhook($payload, $signature, $secret);
+$ok = $refundService->handleWebhook($payload, $signature, getenv('RAZORPAY_WEBHOOK_SECRET') ?: '');
 
 http_response_code($ok ? 200 : 400);
 echo json_encode(['success' => $ok]);
