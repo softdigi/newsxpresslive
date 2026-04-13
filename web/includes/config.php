@@ -39,7 +39,7 @@ define('PLAN_YEARLY_PRICE',  '39.99');
 define('PLAN_CURRENCY', 'USD');
 
 // Reporter reel upload key (shared secret — change before deploying to production)
-define('REPORTER_UPLOAD_KEY', 'change-me-in-production-use-a-strong-random-secret');
+define('REPORTER_UPLOAD_KEY', getenv('REPORTER_UPLOAD_KEY') ?: 'change-me-in-production-use-a-strong-random-secret');
 
 $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET;
 

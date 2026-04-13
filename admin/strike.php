@@ -51,8 +51,12 @@ if ($reporterId <= 0 || !in_array($reason, $validReasons, true)) {
     exit;
 }
 
-// Get admin user_id from token (simplified — in production use session)
-$adminId = 1; // TODO: resolve from session
+// Resolve the issuing admin's ID.
+// The endpoint is protected by ADMIN_API_TOKEN (shared secret), so there
+// is no per-admin session here.  Callers MAY pass their own admin_users.id
+// as "admin_id" in the request body to record who issued the strike.
+// If omitted or invalid (≤0), fall back to 0 (system/unknown).
+$adminId = max(0, (int)($body['admin_id'] ?? 0));
 
 $mod    = ModerationService::getInstance($pdo);
 $result = $mod->issueStrike($reporterId, $articleId, $reason, $details, $adminId);

@@ -7,6 +7,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/api_endpoints.dart';
 
 class PodcastPlayerWidget extends StatefulWidget {
@@ -197,11 +199,18 @@ class _PodcastPlayerWidgetState extends State<PodcastPlayerWidget> {
                 // Download
                 IconButton(
                   icon: const Icon(Icons.download, color: Colors.white54, size: 20),
-                  onPressed: () {
-                    // TODO: launch download URL
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Download started…')),
-                    );
+                  onPressed: () async {
+                    final fileUrl = _digest!['file_url'] as String?;
+                    if (fileUrl == null || fileUrl.isEmpty) return;
+                    final uri = Uri.tryParse(fileUrl);
+                    if (uri == null) return;
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    } else if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Could not open download link')),
+                      );
+                    }
                   },
                 ),
 
@@ -209,10 +218,11 @@ class _PodcastPlayerWidgetState extends State<PodcastPlayerWidget> {
                 IconButton(
                   icon: const Icon(Icons.share, color: Colors.white54, size: 20),
                   onPressed: () {
-                    // TODO: integrate share_plus
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Share: ${_digest!['file_url']}')),
-                    );
+                    final fileUrl  = _digest!['file_url']  as String? ?? '';
+                    final title    = _digest!['title']     as String? ?? 'Daily Digest';
+                    final date     = _digest!['date']      as String? ?? '';
+                    final shareText = '$title — $date\n$fileUrl';
+                    Share.share(shareText, subject: title);
                   },
                 ),
               ]),
