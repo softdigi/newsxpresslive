@@ -11,11 +11,11 @@
  * Run at midnight: 0 0 * * * php /path/to/cron/calculate_reporter_scores.php
  */
 
+declare(strict_types=1);
+
 if (PHP_SAPI !== 'cli') {
     exit('CLI only');
 }
-
-declare(strict_types=1);
 
 require_once __DIR__ . '/../web/includes/config.php';
 require_once __DIR__ . '/../helpers/notification.php';

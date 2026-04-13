@@ -11,11 +11,11 @@
  *   SITE_URL
  */
 
+declare(strict_types=1);
+
 if (PHP_SAPI !== 'cli') {
     exit('CLI only');
 }
-
-declare(strict_types=1);
 
 require_once __DIR__ . '/../web/includes/config.php';
 
