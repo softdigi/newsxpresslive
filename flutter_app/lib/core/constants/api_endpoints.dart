@@ -264,4 +264,36 @@ class ApiEndpoints {
   /// GET  (auth) → reporter's active strikes with appeal status
   /// POST ?action=appeal  (auth) { strike_id, reason } → submit appeal
   static const String myStrikes = '$baseUrl/api/moderation/my_strikes.php';
+
+  // ── Elections ─────────────────────────────────────────────────────────────
+  /// GET ?election_id=N[&district_id=N] → party summary + constituency results
+  static const String electionResults = '$baseUrl/api/election/results.php';
+
+  /// GET ?election_id=N → SSE stream of live party-seat updates (30-second interval)
+  static const String electionLive = '$baseUrl/api/election/live.php';
+
+  // ── Podcast / Audio Digest ────────────────────────────────────────────────
+  /// GET ?language=hi[&date=today] → latest audio digest with article list
+  static const String podcastLatest = '$baseUrl/api/podcast/latest.php';
+
+  // ── Stories ───────────────────────────────────────────────────────────────
+  /// GET  (auth)            → active stories grouped by reporter; unseen first
+  static const String storiesFeed = '$baseUrl/api/stories/feed.php';
+
+  /// POST (auth, multipart) → create a 24-hour story (image|video|text)
+  static const String storiesCreate = '$baseUrl/api/stories/create.php';
+
+  // ── Fact Check ────────────────────────────────────────────────────────────
+  /// POST (auth, admin/moderator) → submit fact-check verdict for an article
+  static const String factCheckSubmit = '$baseUrl/api/fact_check/submit.php';
+
+  // ── Reporter Leaderboard (v2) ─────────────────────────────────────────────
+  /// GET ?period=weekly|monthly|all_time&state_id=&limit=50
+  ///   → ranked reporter list with badges
+  static const String leaderboardReporters = '$baseUrl/api/leaderboard/reporters.php';
+
+  // ── Weather ───────────────────────────────────────────────────────────────
+  /// GET ?city=Lucknow  OR  ?lat=26.8&lng=80.9
+  ///   → current weather + 3-day forecast (OpenWeatherMap, cached 30 min)
+  static const String weatherCurrent = '$baseUrl/api/weather/current.php';
 }
