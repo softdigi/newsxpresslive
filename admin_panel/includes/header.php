@@ -113,6 +113,16 @@ header('Content-Type: text/html; charset=UTF-8');
 
     <a href="<?= ADMIN_URL ?>/logout.php">🚪 Logout</a>
 
+    <?php if (can(['admin','super_admin'])): ?>
+      <div class="nav-section">Rewards</div>
+      <a href="<?= ADMIN_URL ?>/rewards/dashboard.php">📊 Reward Dashboard</a>
+      <a href="<?= ADMIN_URL ?>/rewards/withdrawals.php">💳 Withdrawals</a>
+      <?php if ($_SESSION['admin']['role'] === 'super_admin'): ?>
+      <a href="<?= ADMIN_URL ?>/rewards/config.php">⚙️ Reward Config</a>
+      <a href="<?= ADMIN_URL ?>/rewards/config_audit.php">📋 Config Audit</a>
+      <?php endif; ?>
+    <?php endif; ?>
+
   </nav>
 
 </aside>
