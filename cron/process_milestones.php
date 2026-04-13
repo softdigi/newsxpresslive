@@ -6,7 +6,7 @@
  * Active users ke liye milestone check karo aur grant karo.
  *
  * Crontab entry:
- *   * /15 * * * * php /path/to/cron/process_milestones.php >> /var/log/milestones.log 2>&1
+ *   */15 * * * * php /path/to/cron/process_milestones.php >> /var/log/milestones.log 2>&1
  */
 
 declare(strict_types=1);

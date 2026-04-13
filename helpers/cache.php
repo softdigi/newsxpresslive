@@ -154,19 +154,56 @@ class ApiCache
      * If the key is in cache, return it. Otherwise execute $callback,
      * store the result with the given TTL, and return it.
      *
+     * A sentinel wrapper is used internally so that a legitimate `null`
+     * return from the callback is cached and distinguished from a cache miss.
+     * Without the sentinel, callbacks that return `null` (e.g. "user not found")
+     * would re-execute on every call.
+     *
      * @param  callable $callback  Returns the value to cache
      */
     public function remember(string $key, int $ttl, callable $callback): mixed
     {
-        $cached = $this->get($key);
-        if ($cached !== null) {
-            return $cached;
+        $fullKey   = $this->prefix . 'wrapped:' . $key;
+        $sentinel  = '__NXL_CACHED__';
+
+        // Check cache for the sentinel-wrapped value
+        try {
+            if ($this->redis !== null) {
+                $raw = $this->redis->get($fullKey);
+                if ($raw !== false) {
+                    $decoded = json_decode($raw, true);
+                    if (is_array($decoded) && ($decoded['_s'] ?? '') === $sentinel) {
+                        return $decoded['v'];
+                    }
+                }
+            } elseif ($this->useApcu) {
+                $entry = apcu_fetch($fullKey, $success);
+                if ($success && is_array($entry) && ($entry['_s'] ?? '') === $sentinel) {
+                    return $entry['v'];
+                }
+            }
+        } catch (Exception $e) {
+            error_log('ApiCache::remember get error: ' . $e->getMessage());
         }
 
-        $value = $callback();
-        if ($value !== null) {
-            $this->set($key, $value, $ttl);
+        $value   = $callback();
+        $wrapped = ['_s' => $sentinel, 'v' => $value];
+
+        try {
+            if ($this->redis !== null) {
+                $encoded = json_encode($wrapped, JSON_UNESCAPED_UNICODE);
+                if ($ttl > 0) {
+                    $this->redis->setex($fullKey, $ttl, $encoded);
+                } else {
+                    $this->redis->set($fullKey, $encoded);
+                }
+            } elseif ($this->useApcu) {
+                apcu_store($fullKey, $wrapped, $ttl);
+            }
+        } catch (Exception $e) {
+            error_log('ApiCache::remember set error: ' . $e->getMessage());
         }
+
         return $value;
     }
 
@@ -209,7 +246,14 @@ class ApiCache
             }
 
             if ($this->useApcu) {
-                apcu_clear_cache();
+                // APCUIterator limits deletion to our namespace prefix only,
+                // preventing accidental clearing of other apps' APCu entries.
+                if (class_exists('APCUIterator')) {
+                    $pattern = '/^' . preg_quote($this->prefix, '/') . '/';
+                    foreach (new \APCUIterator($pattern) as $item) {
+                        apcu_delete($item['key']);
+                    }
+                }
             }
         } catch (Exception $e) {
             error_log('ApiCache::flush error: ' . $e->getMessage());

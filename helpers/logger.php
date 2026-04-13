@@ -124,7 +124,8 @@ class AppLogger
         if (isset($_SERVER['REQUEST_METHOD'])) {
             $record['request'] = [
                 'method' => $_SERVER['REQUEST_METHOD'],
-                'uri'    => $_SERVER['REQUEST_URI'] ?? '',
+                // Truncate URI to prevent log-injection via crafted long URIs
+                'uri'    => mb_substr($_SERVER['REQUEST_URI'] ?? '', 0, 512),
                 'ip'     => $_SERVER['REMOTE_ADDR'] ?? '',
             ];
         }

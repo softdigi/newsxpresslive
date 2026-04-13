@@ -66,19 +66,31 @@ class ReferralEngine
                 self::CODE_LEN
             ));
 
-            // Collision check
+            // Collision check + INSERT in a single try block.
+            // Even if two processes pass the SELECT check simultaneously,
+            // only one INSERT will succeed if there is a UNIQUE constraint
+            // on referral_code; the other will throw a PDOException with
+            // SQLSTATE 23000 (duplicate key) which we catch and retry.
             $checkStmt = self::$pdo->prepare(
                 'SELECT id FROM referral_codes WHERE referral_code = ? LIMIT 1'
             );
             $checkStmt->execute([$code]);
             if (!$checkStmt->fetch()) {
-                // Insert karo
-                self::$pdo->prepare(
-                    'INSERT INTO referral_codes
-                        (user_id, referral_code, is_active, created_at)
-                     VALUES (?, ?, 1, NOW())'
-                )->execute([$userId, $code]);
-                return $code;
+                try {
+                    self::$pdo->prepare(
+                        'INSERT INTO referral_codes
+                            (user_id, referral_code, is_active, created_at)
+                         VALUES (?, ?, 1, NOW())'
+                    )->execute([$userId, $code]);
+                    return $code;
+                } catch (\PDOException $e) {
+                    // SQLSTATE 23000 = integrity constraint violation (duplicate key)
+                    if (str_starts_with((string)$e->getCode(), '23')) {
+                        // Another process inserted this code first — retry
+                        continue;
+                    }
+                    throw $e;
+                }
             }
         }
 

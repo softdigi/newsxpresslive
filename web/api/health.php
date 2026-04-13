@@ -64,12 +64,14 @@ try {
 }
 
 // ── 3. Disk write check ───────────────────────────────────────────────
+// file_put_contents() returns false on failure — it does NOT throw an
+// exception, so a try/catch would silently report 'ok' even on error.
 $tmpFile = sys_get_temp_dir() . '/nxl_health_' . getmypid();
-try {
-    file_put_contents($tmpFile, '1');
-    unlink($tmpFile);
+$written = @file_put_contents($tmpFile, '1');
+if ($written !== false) {
+    @unlink($tmpFile);
     $checks['disk'] = ['status' => 'ok'];
-} catch (Exception $e) {
+} else {
     $checks['disk'] = ['status' => 'warn', 'message' => 'tmp write failed'];
 }
 

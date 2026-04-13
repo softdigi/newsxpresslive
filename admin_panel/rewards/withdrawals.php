@@ -128,23 +128,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $flash = '⚠️ Invalid UTR format. Must be 8–22 alphanumeric characters.';
             $flashType = 'warning';
         } else {
-            $pdo->prepare(
-                "UPDATE reward_withdrawals SET status='completed', transaction_ref=?, processed_at=NOW(), updated_at=NOW() WHERE id=?"
-            )->execute([$utr, $wId]);
+            // Guard: only allow completing a withdrawal that is currently
+            // pending or processing — prevents double wallet debits if the
+            // action is submitted twice or the withdrawal is already done.
+            $upd = $pdo->prepare(
+                "UPDATE reward_withdrawals
+                    SET status='completed', transaction_ref=?, processed_at=NOW(), updated_at=NOW()
+                  WHERE id=? AND status IN ('pending','processing')"
+            );
+            $upd->execute([$utr, $wId]);
 
-            $wRow = $pdo->prepare("SELECT user_uid, amount_inr FROM reward_withdrawals WHERE id=?");
-            $wRow->execute([$wId]);
-            $wData = $wRow->fetch();
-            if ($wData) {
-                $pdo->prepare(
-                    "UPDATE inr_wallets SET total_withdrawn=total_withdrawn+?, balance=balance-?, updated_at=NOW() WHERE user_id=?"
-                )->execute([(float)$wData['amount_inr'], (float)$wData['amount_inr'], $wData['user_uid']]);
-                $pdo->prepare(
-                    "INSERT INTO reward_transactions (user_id, wallet_type, transaction_type, amount, reference_id, status, created_at)
-                     VALUES (?, 'inr', 'withdrawal', ?, ?, 'completed', NOW())"
-                )->execute([$wData['user_uid'], $wData['amount_inr'], $wId]);
+            if ($upd->rowCount() === 1) {
+                $wRow = $pdo->prepare("SELECT user_uid, amount_inr FROM reward_withdrawals WHERE id=?");
+                $wRow->execute([$wId]);
+                $wData = $wRow->fetch();
+                if ($wData) {
+                    $pdo->prepare(
+                        "UPDATE inr_wallets SET total_withdrawn=total_withdrawn+?, balance=balance-?, updated_at=NOW() WHERE user_id=?"
+                    )->execute([(float)$wData['amount_inr'], (float)$wData['amount_inr'], $wData['user_uid']]);
+                    $pdo->prepare(
+                        "INSERT INTO reward_transactions (user_id, wallet_type, transaction_type, amount, reference_id, status, created_at)
+                         VALUES (?, 'inr', 'withdrawal', ?, ?, 'completed', NOW())"
+                    )->execute([$wData['user_uid'], $wData['amount_inr'], $wId]);
+                }
+                $flash = "✅ Withdrawal #{$wId} marked Completed. UTR: {$utr}";
+            } else {
+                $flash     = "⚠️ Withdrawal #{$wId} could not be completed (already processed or not found).";
+                $flashType = 'warning';
             }
-            $flash = "✅ Withdrawal #{$wId} marked Completed. UTR: {$utr}";
         }
 
     } elseif ($action === 'reject' && $wId > 0) {
@@ -181,57 +192,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $flash = "✅ Withdrawal #{$wId} marked as Failed. Balance refunded.";
 
     } elseif ($action === 'razorpay_payout' && $wId > 0) {
-        $wRow = $pdo->prepare("SELECT * FROM reward_withdrawals WHERE id=? AND status='processing'");
-        $wRow->execute([$wId]);
-        $wData = $wRow->fetch();
-        if ($wData) {
-            $result = razorpayPayout($wId, $wData['upi_id'], (float)$wData['amount_inr'], $pdo);
-            if ($result['success']) {
-                $flash = "✅ Razorpay payout successful! UTR: " . ($result['utr'] ?? $result['payout_id']);
-            } else {
-                $flash     = "❌ Razorpay payout failed: " . htmlspecialchars($result['error'], ENT_QUOTES, 'UTF-8');
-                $flashType = 'error';
-                $pdo->prepare(
-                    "UPDATE reward_withdrawals SET admin_note=? WHERE id=?"
-                )->execute([$result['error'], $wId]);
-            }
-        } else {
-            $flash     = "⚠️ Withdrawal not found or not in Processing status.";
-            $flashType = 'warning';
-        }
+        // Atomically transition to 'payout_pending' before hitting the API.
+        // If two admin tabs submit the form at the same instant, only the
+        // first UPDATE matches (rowCount=1); the second sees rowCount=0
+        // and is rejected — preventing a double payout.
+        $lock = $pdo->prepare(
+            "UPDATE reward_withdrawals
+                SET status='payout_pending', updated_at=NOW()
+              WHERE id=? AND status='processing'"
+        );
+        $lock->execute([$wId]);
 
-    } elseif ($action === 'razorpay_payout' && $wId > 0) {
-        $wRow = $pdo->prepare("SELECT * FROM reward_withdrawals WHERE id=? AND status='processing'");
-        $wRow->execute([$wId]);
-        $wData = $wRow->fetch();
-        if ($wData) {
-            $result = razorpayPayout($wId, $wData['upi_id'], (float)$wData['amount_inr'], $pdo);
-            if ($result['success']) {
-                $flash = "✅ Razorpay payout successful! UTR: " . ($result['utr'] ?? $result['payout_id']);
-            } else {
-                $flash     = "❌ Razorpay payout failed: " . htmlspecialchars($result['error'], ENT_QUOTES, 'UTF-8');
-                $flashType = 'error';
-                $pdo->prepare(
-                    "UPDATE reward_withdrawals SET admin_note=? WHERE id=?"
-                )->execute([$result['error'], $wId]);
-            }
-        } else {
-            $flash     = "⚠️ Withdrawal not found or not in Processing status.";
+        if ($lock->rowCount() !== 1) {
+            $flash     = "⚠️ Withdrawal not available for payout (not in Processing status).";
             $flashType = 'warning';
+        } else {
+            $wRow = $pdo->prepare("SELECT * FROM reward_withdrawals WHERE id=?");
+            $wRow->execute([$wId]);
+            $wData = $wRow->fetch();
+            if ($wData) {
+                $result = razorpayPayout($wId, $wData['upi_id'], (float)$wData['amount_inr'], $pdo);
+                if ($result['success']) {
+                    $flash = "✅ Razorpay payout successful! UTR: " . ($result['utr'] ?? $result['payout_id']);
+                } else {
+                    // Revert status so admin can retry
+                    $pdo->prepare(
+                        "UPDATE reward_withdrawals SET status='processing', admin_note=?, updated_at=NOW() WHERE id=?"
+                    )->execute([$result['error'], $wId]);
+                    $flash     = "❌ Razorpay payout failed: " . htmlspecialchars($result['error'], ENT_QUOTES, 'UTF-8');
+                    $flashType = 'error';
+                }
+            }
         }
 
     } elseif ($action === 'bulk_process') {
         $ids = array_map('intval', $_POST['bulk_ids'] ?? []);
-        $ok  = 0;
+        $ok   = 0;
         $fail = 0;
         foreach ($ids as $id) {
             if ($id <= 0) continue;
-            $wRow = $pdo->prepare("SELECT * FROM reward_withdrawals WHERE id=? AND status='processing'");
+            // Same atomic lock pattern as single payout to prevent race conditions
+            $lock = $pdo->prepare(
+                "UPDATE reward_withdrawals
+                    SET status='payout_pending', updated_at=NOW()
+                  WHERE id=? AND status='processing'"
+            );
+            $lock->execute([$id]);
+            if ($lock->rowCount() !== 1) {
+                $fail++;
+                continue;
+            }
+            $wRow = $pdo->prepare("SELECT * FROM reward_withdrawals WHERE id=?");
             $wRow->execute([$id]);
             $wData = $wRow->fetch();
             if ($wData) {
                 $result = razorpayPayout($id, $wData['upi_id'], (float)$wData['amount_inr'], $pdo);
-                $result['success'] ? $ok++ : $fail++;
+                if ($result['success']) {
+                    $ok++;
+                } else {
+                    // Revert status so admin can retry this item
+                    $pdo->prepare(
+                        "UPDATE reward_withdrawals SET status='processing', updated_at=NOW() WHERE id=?"
+                    )->execute([$id]);
+                    $fail++;
+                }
             }
         }
         $flash = "✅ Bulk payout: {$ok} succeeded, {$fail} failed.";
