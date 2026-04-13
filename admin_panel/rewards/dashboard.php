@@ -335,7 +335,7 @@ require_once __DIR__ . '/../includes/header.php';
           <tr>
             <td style="font-size:12px"><?= htmlspecialchars(substr($w['user_uid'], 0, 14), ENT_QUOTES) ?>…</td>
             <td style="font-weight:600">₹<?= number_format((float)$w['amount_inr'], 2) ?></td>
-            <td><span class="badge-pill badge-<?= $w['status'] ?>"><?= ucfirst($w['status']) ?></span></td>
+            <td><span class="badge-pill badge-<?= htmlspecialchars($w['status'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(ucfirst($w['status']), ENT_QUOTES, 'UTF-8') ?></span></td>
             <td>
               <a href="withdrawals.php?highlight=<?= (int)$w['id'] ?>" class="btn-action btn-process">Process</a>
             </td>

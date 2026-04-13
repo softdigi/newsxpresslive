@@ -124,6 +124,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$utr) {
             $flash = '⚠️ UTR number required.';
             $flashType = 'warning';
+        } elseif (!preg_match('/^[A-Za-z0-9]{8,22}$/', $utr)) {
+            $flash = '⚠️ Invalid UTR format. Must be 8–22 alphanumeric characters.';
+            $flashType = 'warning';
         } else {
             $pdo->prepare(
                 "UPDATE reward_withdrawals SET status='completed', transaction_ref=?, processed_at=NOW(), updated_at=NOW() WHERE id=?"
@@ -476,7 +479,7 @@ require_once __DIR__ . '/../includes/header.php';
           <span style="color:#aaa"><?= date('H:i', strtotime($w['requested_at'])) ?></span>
         </td>
         <td>
-          <span class="badge-pill badge-<?= $w['status'] ?>"><?= ucfirst($w['status']) ?></span>
+          <span class="badge-pill badge-<?= htmlspecialchars($w['status'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(ucfirst($w['status']), ENT_QUOTES, 'UTF-8') ?></span>
           <?php if (!empty($w['admin_note'])): ?>
           <br><span style="font-size:11px;color:#999"><?= htmlspecialchars(substr($w['admin_note'], 0, 30), ENT_QUOTES) ?>…</span>
           <?php endif; ?>
