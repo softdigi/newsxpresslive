@@ -63,19 +63,30 @@ class AuthProvider extends ChangeNotifier {
 
   // ── Google Sign-In ────────────────────────────────────────────────────
 
-  Future<bool> signInWithGoogle() async {
+  /// Sign in with Google.
+  ///
+  /// [silent] — when true, attempts a silent (cached credentials) sign-in
+  /// first (used after biometric authentication).  Falls back to the
+  /// interactive flow if no cached credentials are available.
+  Future<bool> signInWithGoogle({bool silent = false}) async {
     _loading  = true;
     _errorMsg = null;
     notifyListeners();
     try {
-      final user = await _auth.signInWithGoogle();
+      final user = await (silent
+          ? _auth.signInWithGoogleSilent()
+          : _auth.signInWithGoogle());
       if (user != null) {
         _user  = user;
         _state = AuthState.signedIn;
         await _postLoginSetup(user);
-        await AnalyticsService.instance.logLogin('google');
+        await AnalyticsService.instance.logLogin(silent ? 'biometric' : 'google');
         notifyListeners();
         return true;
+      }
+      if (silent) {
+        // Silent failed — fall back to interactive
+        return signInWithGoogle(silent: false);
       }
     } on FirebaseAuthException catch (e) {
       _errorMsg = e.message ?? 'Google sign-in failed';

@@ -49,6 +49,36 @@ class AuthService {
     }
   }
 
+  /// Silent sign-in — uses cached Google credentials without showing a
+  /// Google account picker.  Used after biometric authentication.
+  /// Returns null if no cached credentials are available (caller should
+  /// fall back to interactive [signInWithGoogle]).
+  Future<UserModel?> signInWithGoogleSilent() async {
+    try {
+      // Use Firebase's currently signed-in user if still valid
+      final current = _auth.currentUser;
+      if (current != null && !current.isAnonymous) {
+        // Refresh token to confirm it's still valid
+        await current.reload();
+        return _syncWithBackend(_auth.currentUser);
+      }
+
+      // Try Google silent sign-in (returns null if no cached account)
+      final googleUser = await _google.signInSilently();
+      if (googleUser == null) return null;
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken:     googleAuth.idToken,
+      );
+      final result = await _auth.signInWithCredential(credential);
+      return _syncWithBackend(result.user);
+    } on FirebaseAuthException {
+      return null;   // silent failed — caller falls back to interactive
+    }
+  }
+
   // ── Anonymous Sign-In ─────────────────────────────────────────────────
 
   /// Sign in anonymously. Used as a fallback when the user skips login.

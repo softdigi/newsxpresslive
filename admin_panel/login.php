@@ -49,7 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Invalid credentials.';
         } else {
             $stmt = $pdo->prepare(
-                "SELECT id, name, role, agency_id, password, status
+                "SELECT id, name, role, agency_id, password, status,
+                        totp_enabled
                  FROM admin_users
                  WHERE email = ? AND status = 'active'
                  LIMIT 1"
@@ -60,6 +61,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($user && password_verify($password, $user['password'])) {
                 // Reset rate limit on success
                 resetRateLimit($pdo, 'admin_login', $ip);
+
+                if (!empty($user['totp_enabled'])) {
+                    // ── 2FA required: set pending session and redirect ──
+                    $_SESSION['pending_2fa_uid'] = $user['id'];
+                    header('Location: ' . ADMIN_URL . '/security/2fa_verify.php');
+                    exit;
+                }
 
                 // Set session via auth/session.php
                 setAdminSession($user);

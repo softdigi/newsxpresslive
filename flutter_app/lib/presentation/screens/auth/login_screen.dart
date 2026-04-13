@@ -3,14 +3,63 @@ import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../data/services/biometric_service.dart';
 
 /// Login screen shown when the user is not authenticated.
 ///
 /// Options:
 ///   1. Continue with Google (full account)
-///   2. Continue as Guest (anonymous — skips login)
-class LoginScreen extends StatelessWidget {
+///   2. Biometric login (if previously used Google and opted-in)
+///   3. Continue as Guest (anonymous — skips login)
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  bool _biometricAvailable = false;
+  bool _biometricEnabled   = false;
+  String _biometricLabel   = 'Biometric';
+  bool _biometricLoading   = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometric();
+  }
+
+  Future<void> _checkBiometric() async {
+    final bio = BiometricService.instance;
+    final available = await bio.isAvailable();
+    final enabled   = await bio.isEnabled();
+    final label     = await bio.biometricLabel();
+    if (mounted) {
+      setState(() {
+        _biometricAvailable = available;
+        _biometricEnabled   = enabled;
+        _biometricLabel     = label;
+      });
+    }
+  }
+
+  Future<void> _loginWithBiometric() async {
+    if (_biometricLoading) return;
+    setState(() => _biometricLoading = true);
+
+    final ok = await BiometricService.instance.authenticate(
+      localizedReason: 'Authenticate to sign in to NewsXpress',
+    );
+
+    if (!mounted) return;
+    setState(() => _biometricLoading = false);
+
+    if (ok) {
+      // Trigger the stored Google sign-in silently
+      await context.read<AuthProvider>().signInWithGoogle(silent: true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +104,38 @@ class LoginScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
+              ],
+
+              // ── Biometric button (shown only when opted-in) ──────────
+              if (_biometricAvailable && _biometricEnabled) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: (auth.loading || _biometricLoading)
+                        ? null
+                        : _loginWithBiometric,
+                    icon: _biometricLoading
+                        ? const SizedBox(
+                            height: 18,
+                            width:  18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.fingerprint, size: 22),
+                    label: Text(
+                      'Sign in with $_biometricLabel',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 15),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
               ],
 
               // Google Sign-In button
@@ -105,6 +186,29 @@ class LoginScreen extends StatelessWidget {
                 ),
               ),
 
+              // Enable biometric toggle (shown when available but not enabled)
+              if (_biometricAvailable && !_biometricEnabled) ...[
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: () async {
+                    final ok = await BiometricService.instance.authenticate(
+                      localizedReason: 'Enable biometric login for NewsXpress',
+                    );
+                    if (ok) {
+                      await BiometricService.instance.setEnabled(true);
+                      if (mounted) {
+                        setState(() => _biometricEnabled = true);
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.fingerprint, size: 18, color: Colors.grey),
+                  label: Text(
+                    'Enable $_biometricLabel login',
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                ),
+              ],
+
               const Spacer(),
 
               // Disclaimer
@@ -122,6 +226,45 @@ class LoginScreen extends StatelessWidget {
     );
   }
 }
+
+// ── Sub-widgets ───────────────────────────────────────────────────────────
+
+class _AppLogo extends StatelessWidget {
+  const _AppLogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width:  80,
+      height: 80,
+      decoration: BoxDecoration(
+        color:        AppColors.primary,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Icon(Icons.newspaper_rounded,
+          color: Colors.white, size: 44),
+    );
+  }
+}
+
+class _GoogleIcon extends StatelessWidget {
+  const _GoogleIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    // Google 'G' logo using coloured text — no image dependency required.
+    return const Text(
+      'G',
+      style: TextStyle(
+        fontSize:   20,
+        fontWeight: FontWeight.bold,
+        color:      Color(0xFF4285F4),
+        height:     1,
+      ),
+    );
+  }
+}
+
 
 // ── Sub-widgets ───────────────────────────────────────────────────────────
 

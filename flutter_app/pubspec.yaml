@@ -79,6 +79,9 @@ dependencies:
   # ── Text-to-Speech ────────────────────────────────────────────────────
   flutter_tts: ^4.0.2
 
+  # ── Biometric Authentication ──────────────────────────────────────────
+  local_auth: ^2.1.8
+
   # ── In-App Review (Android native Play Store dialog) ─────────────────
   in_app_review: ^2.0.9
 
