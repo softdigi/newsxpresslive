@@ -11,7 +11,9 @@ require_once __DIR__ . '/../includes/config.php';
 
 try {
     $stmt = $pdo->query(
-        'SELECT id, name, slug FROM categories ORDER BY name ASC'
+        'SELECT id, name, slug, emoji, color_hex, is_mood_category, sort_order
+         FROM categories
+         ORDER BY sort_order ASC, name ASC'
     );
     echo json_encode($stmt->fetchAll());
 } catch (PDOException $e) {

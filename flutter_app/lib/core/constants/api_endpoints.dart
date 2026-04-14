@@ -296,4 +296,26 @@ class ApiEndpoints {
   /// GET ?city=Lucknow  OR  ?lat=26.8&lng=80.9
   ///   → current weather + 3-day forecast (OpenWeatherMap, cached 30 min)
   static const String weatherCurrent = '$baseUrl/api/weather/current.php';
+
+  // ── Preference System (v31) ───────────────────────────────────────────────
+
+  /// GET  (auth) ?duration_minutes=5
+  ///   → whether to show popup + enriched category list with scores
+  static const String preferencesCheck = '$baseUrl/api/preferences/check.php';
+
+  /// POST (auth) { categories[], context, was_popup, time_to_select_seconds }
+  ///   → save today's mood selection
+  static const String preferencesSaveMood = '$baseUrl/api/preferences/save_mood.php';
+
+  /// POST (auth) { context, popup_type }
+  ///   → record popup skip; returns new streak + snooze info
+  static const String preferencesSkipPopup = '$baseUrl/api/preferences/skip_popup.php';
+
+  /// POST (auth) { step, ...stepData }
+  ///   → save one onboarding step (language|location|categories|notifications)
+  static const String preferencesOnboarding = '$baseUrl/api/preferences/onboarding.php';
+
+  /// GET  (auth)
+  ///   → full preference profile (onboarding state, categories, insights)
+  static const String preferencesGet = '$baseUrl/api/preferences/get.php';
 }
