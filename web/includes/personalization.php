@@ -233,6 +233,225 @@ function getCollaborativeArticles(PDO $pdo, string $sessionId, int $limit = 6): 
     }
 }
 
+// ============================================================
+// ENHANCED FEED — preference-system aware (Phase 2)
+// ============================================================
+
+/**
+ * Build a personalized feed that merges mood preferences, behavior weights,
+ * location relevance, viral score, and breaking-news bonus into a single
+ * ranked SQL query.
+ *
+ * @param  string $uid     Firebase user ID (same as user_preferences.user_id)
+ * @param  array  $filters {
+ *   limit: int  (default 20)
+ * }
+ * @return array  Ranked news rows with additional fields:
+ *                is_mood_match (bool), relevance_reason (string),
+ *                relevance_score (float)
+ */
+function getEnhancedFeed(string $uid, array $filters = []): array
+{
+    $limit = max(1, min(50, (int) ($filters['limit'] ?? 20)));
+
+    /* ── 1. Load user preferences ──────────────────────────────── */
+    try {
+        $pdo  = _getEnhancedPDO();
+        $stmt = $pdo->prepare(
+            'SELECT last_mood_categories, behavior_weights,
+                    preferred_state_id, preferred_district_id
+             FROM user_preferences
+             WHERE user_id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$uid]);
+        $prefs = $stmt->fetch(\PDO::FETCH_ASSOC);
+    } catch (\Throwable $e) {
+        return _fetchLatestNews(_getEnhancedPDO(), $limit);
+    }
+
+    /* ── 2. Decode mood categories and behavior weights ─────────── */
+    $moodCats = [];
+    if (!empty($prefs['last_mood_categories'])) {
+        $decoded = json_decode($prefs['last_mood_categories'], true);
+        if (is_array($decoded)) {
+            $moodCats = $decoded;
+        }
+    }
+
+    $weights = [];
+    if (!empty($prefs['behavior_weights'])) {
+        $decoded = json_decode($prefs['behavior_weights'], true);
+        if (is_array($decoded)) {
+            $weights = $decoded;
+        }
+    }
+
+    $preferredStateId    = isset($prefs['preferred_state_id'])
+        ? (int) $prefs['preferred_state_id'] : null;
+    $preferredDistrictId = isset($prefs['preferred_district_id'])
+        ? (int) $prefs['preferred_district_id'] : null;
+
+    /* ── 3. Build the ranked query ──────────────────────────────── */
+    // Mood score: +4.0 if category slug is in mood list
+    $moodCaseWhen = '';
+    $moodParams   = [];
+    if (!empty($moodCats)) {
+        $moodPlaceholders = implode(',', array_fill(0, count($moodCats), '?'));
+        $moodCaseWhen     = "CASE WHEN c.slug IN ({$moodPlaceholders}) THEN 4.0 ELSE 0.0 END";
+        $moodParams       = array_values($moodCats);
+    } else {
+        $moodCaseWhen = '0.0';
+    }
+
+    // behavior_score: JSON_EXTRACT from the per-user JSON, fallback 0.5, * 3.0
+    $behaviorScore = "COALESCE(
+        CAST(JSON_UNQUOTE(
+            JSON_EXTRACT(
+                (SELECT behavior_weights FROM user_preferences WHERE user_id = ?),
+                CONCAT('$.\"', c.slug, '\"')
+            )
+        ) AS DECIMAL(5,3)),
+        0.500
+    ) * 3.0";
+    $behaviorParams = [$uid];
+
+    // Location score
+    $locationScore  = '0.0';
+    $locationParams = [];
+    if ($preferredDistrictId !== null && $preferredStateId !== null) {
+        $locationScore  = "CASE
+            WHEN n.district_id = ? THEN 2.0
+            WHEN n.state_id    = ? THEN 1.0
+            ELSE 0.0
+        END";
+        $locationParams = [$preferredDistrictId, $preferredStateId];
+    } elseif ($preferredStateId !== null) {
+        $locationScore  = "CASE WHEN n.state_id = ? THEN 1.0 ELSE 0.0 END";
+        $locationParams = [$preferredStateId];
+    }
+
+    // Viral score (normalised to 0–1)
+    $viralScoreNorm = 'COALESCE(n.viral_score, 0) / 100.0';
+
+    // Breaking bonus
+    $breakingBonus = 'CASE WHEN n.is_breaking = 1 THEN 1.5 ELSE 0.0 END';
+
+    $sql = "
+        SELECT
+            n.id, n.title, n.slug AS news_slug,
+            n.featured_image, n.content, n.created_at,
+            n.is_breaking, n.viral_score,
+            n.state_id, n.district_id,
+            c.name  AS category_name,
+            c.slug  AS category_slug,
+            c.emoji AS category_emoji,
+            c.color_hex AS category_color,
+            ({$moodCaseWhen})  AS mood_score,
+            ({$behaviorScore}) AS behavior_score,
+            ({$locationScore}) AS location_score,
+            ({$viralScoreNorm}) AS viral_score_norm,
+            ({$breakingBonus}) AS breaking_bonus,
+            (
+                ({$moodCaseWhen})   +
+                ({$behaviorScore})  +
+                ({$locationScore})  +
+                ({$viralScoreNorm}) +
+                ({$breakingBonus})
+            ) AS relevance_score
+        FROM `news` n
+        INNER JOIN `categories` c ON c.id = n.category_id
+        WHERE n.status = 'approved'
+          AND n.id NOT IN (
+              SELECT article_id
+              FROM user_read_history
+              WHERE user_id = ?
+                AND read_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)
+          )
+        ORDER BY relevance_score DESC, n.created_at DESC
+        LIMIT {$limit}
+    ";
+
+    // Assemble params — each expression that references ? needs its params
+    // in the order they appear in the SQL string.
+    // Mood appears TWICE in SELECT + relevance_score sum
+    $params = array_merge(
+        $moodParams,       // mood_score alias
+        $behaviorParams,   // behavior_score alias
+        $locationParams,   // location_score alias
+        [],                // viral_score_norm — no params
+        [],                // breaking_bonus   — no params
+        $moodParams,       // relevance_score: mood part
+        $behaviorParams,   // relevance_score: behavior part
+        $locationParams,   // relevance_score: location part
+        [$uid]             // NOT IN subquery
+    );
+
+    try {
+        $pdo  = _getEnhancedPDO();
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $articles = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    } catch (\Throwable $e) {
+        error_log('getEnhancedFeed query error: ' . $e->getMessage());
+        return _fetchLatestNews(_getEnhancedPDO(), $limit);
+    }
+
+    /* ── 4 & 5. Enrich each article ─────────────────────────────── */
+    foreach ($articles as &$article) {
+        $slug                      = (string) ($article['category_slug'] ?? '');
+        $article['is_mood_match']  = in_array($slug, $moodCats, true);
+        $article['relevance_reason'] = _getRelevanceReason(
+            $article,
+            $moodCats
+        );
+    }
+    unset($article);
+
+    return $articles;
+}
+
+/**
+ * Determine a human-readable reason for why this article was surfaced.
+ *
+ * @param  array    $article  Row from getEnhancedFeed query
+ * @param  string[] $moodCats Current mood category slugs
+ * @return string
+ */
+function _getRelevanceReason(array $article, array $moodCats): string
+{
+    if ((int) ($article['is_breaking'] ?? 0) === 1) {
+        return 'breaking';
+    }
+    if (in_array((string) ($article['category_slug'] ?? ''), $moodCats, true)) {
+        return 'mood_match';
+    }
+    if ((float) ($article['location_score'] ?? 0) > 0) {
+        return 'local';
+    }
+    if ((float) ($article['behavior_score'] ?? 0) > 1.5) {
+        return 'your_interest';
+    }
+    return 'trending';
+}
+
+/**
+ * Internal helper: obtain a PDO instance without relying on a function
+ * being defined in the outer scope.
+ */
+function _getEnhancedPDO(): \PDO
+{
+    if (function_exists('getPDO')) {
+        return getPDO();
+    }
+    require_once __DIR__ . '/config.php';
+    return getPDO();
+}
+
+// ============================================================
+// END ENHANCED FEED
+// ============================================================
+
 /**
  * Simple recency fallback.
  */
