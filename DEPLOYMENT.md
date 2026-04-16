@@ -2,7 +2,7 @@
 
 > **Language:** Hinglish + English mixed for easy understanding  
 > **For:** cPanel / Shared Hosting + VPS (Ubuntu 22.04, Nginx)  
-> **DB Schema:** Migrations up to `v30` (Referral Reward System Phase 3)
+> **DB Schema:** Migrations up to `v32` (Live Streaming — Agora.io)
 
 ---
 
@@ -77,6 +77,8 @@ db/migration_v27_growth.sql
 db/migration_v28_platform_polish.sql
 db/migration_v29_referral_system.sql     ← 13 new tables + reward_config defaults
 db/migration_v30_reward_phase3.sql       ← Phase 3 schema additions
+db/migration_v31_preference_system.sql   ← Preference/onboarding system (5 tables)
+db/migration_v32_live_streaming.sql      ← Agora live streaming upgrade (3 new tables + ALTER)
 ```
 
 **VPS pe ek command mein:**
@@ -90,7 +92,8 @@ for f in db/migrations.sql db/migration_v2.sql db/migration_v3_agency_partner.sq
   db/migration_v24_gamification.sql db/migration_v25_reporter_withdrawals.sql \
   db/migration_v26_kyc_subscriptions.sql db/migration_v27_growth.sql \
   db/migration_v28_platform_polish.sql db/migration_v29_referral_system.sql \
-  db/migration_v30_reward_phase3.sql; do
+  db/migration_v30_reward_phase3.sql db/migration_v31_preference_system.sql \
+  db/migration_v32_live_streaming.sql; do
   mysql -u nxl_user -p newsxpresslive < "$f"
 done
 ```
@@ -356,6 +359,9 @@ SetEnv SENDGRID_API_KEY SG.xxx
 SetEnv CDN_URL https://cdn.yourdomain.com
 SetEnv ALERT_EMAIL admin@yourdomain.com
 SetEnv SLACK_WEBHOOK https://hooks.slack.com/services/xxx
+# Agora.io — Live Streaming
+SetEnv AGORA_APP_ID your_32char_agora_app_id
+SetEnv AGORA_APP_CERT your_32char_agora_app_certificate
 ```
 
 ### VPS — `/var/www/newsxpress/.env`
