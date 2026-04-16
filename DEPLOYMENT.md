@@ -79,6 +79,8 @@ db/migration_v29_referral_system.sql     ← 13 new tables + reward_config defau
 db/migration_v30_reward_phase3.sql       ← Phase 3 schema additions
 db/migration_v31_preference_system.sql   ← Preference/onboarding system (5 tables)
 db/migration_v32_live_streaming.sql      ← Agora live streaming upgrade (3 new tables + ALTER)
+db/migration_v33_community_academy_events_ai.sql  ← Community groups, academy, AR events, AI assistant
+db/migration_v34_features_10_16.sql      ← Horoscope, Cricket, Offline packs, Quiz, AR markers, Bot reporter
 ```
 
 **VPS pe ek command mein:**
@@ -93,7 +95,8 @@ for f in db/migrations.sql db/migration_v2.sql db/migration_v3_agency_partner.sq
   db/migration_v26_kyc_subscriptions.sql db/migration_v27_growth.sql \
   db/migration_v28_platform_polish.sql db/migration_v29_referral_system.sql \
   db/migration_v30_reward_phase3.sql db/migration_v31_preference_system.sql \
-  db/migration_v32_live_streaming.sql; do
+  db/migration_v32_live_streaming.sql db/migration_v33_community_academy_events_ai.sql \
+  db/migration_v34_features_10_16.sql; do
   mysql -u nxl_user -p newsxpresslive < "$f"
 done
 ```
@@ -441,9 +444,14 @@ flutter build ios --release
 | `0 2 * * *` | `php /home/user/public_html/cron/fraud_daily_report.php` | Fraud daily report |
 | `0 3 * * *` | `php /home/user/public_html/cron/lifetime_revenue_share.php` | Lifetime referral share |
 | `0 4 * * *` | `bash /home/user/public_html/scripts/backup.sh` | DB backup |
+| `0 5 * * *` | `php /home/user/public_html/cron/generate_offline_packs.php` | Offline news packs (v34) |
+| `0 6 * * *` | `php /home/user/public_html/cron/fetch_horoscope.php` | Daily horoscope (v34) |
 | `0 7 * * *` | `php /home/user/public_html/cron/generate_audio_digest.php` | Audio digest |
+| `0 7 * * *` | `php /home/user/public_html/cron/generate_daily_quiz.php` | Daily news quiz (v34) |
 | `0 8 * * *` | `php /home/user/public_html/cron/send_whatsapp_digest.php` | WhatsApp digest |
 | `0 9 * * *` | `php /home/user/public_html/cron/check_mandi_alerts.php` | Mandi price alerts |
+| `*/2 * * * *` | `php /home/user/public_html/cron/fetch_cricket.php` | Cricket live scores (v34) |
+| `0 * * * *` | `php /home/user/public_html/cron/bot_reporter.php` | AI bot reporter (v34) |
 | `0 23 * * *` | `php /home/user/public_html/cron/track_agency_revenue.php` | Agency revenue |
 | `0 0 1 * *` | `php /home/user/public_html/cron/monthly_agency_payout.php` | Monthly payouts |
 | `0 0 1 * *` | `php /home/user/public_html/cron/reset_monthly_caps.php` | Reset reward caps |
@@ -460,9 +468,14 @@ flutter build ios --release
 0 2 * * * www-data php /var/www/newsxpress/public_html/cron/fraud_daily_report.php >> /var/log/nxl_cron.log 2>&1
 0 3 * * * www-data php /var/www/newsxpress/public_html/cron/lifetime_revenue_share.php >> /var/log/nxl_cron.log 2>&1
 0 4 * * * root bash /var/www/newsxpress/scripts/backup.sh >> /var/log/nxl_backup.log 2>&1
+0 5 * * * www-data php /var/www/newsxpress/public_html/cron/generate_offline_packs.php >> /var/log/nxl_cron.log 2>&1
+0 6 * * * www-data php /var/www/newsxpress/public_html/cron/fetch_horoscope.php >> /var/log/nxl_cron.log 2>&1
 0 7 * * * www-data php /var/www/newsxpress/public_html/cron/generate_audio_digest.php >> /var/log/nxl_cron.log 2>&1
+0 7 * * * www-data php /var/www/newsxpress/public_html/cron/generate_daily_quiz.php >> /var/log/nxl_cron.log 2>&1
 0 8 * * * www-data php /var/www/newsxpress/public_html/cron/send_whatsapp_digest.php >> /var/log/nxl_cron.log 2>&1
 0 9 * * * www-data php /var/www/newsxpress/public_html/cron/check_mandi_alerts.php >> /var/log/nxl_cron.log 2>&1
+*/2 * * * * www-data php /var/www/newsxpress/public_html/cron/fetch_cricket.php >> /var/log/nxl_cron.log 2>&1
+0 * * * * www-data php /var/www/newsxpress/public_html/cron/bot_reporter.php >> /var/log/nxl_cron.log 2>&1
 0 23 * * * www-data php /var/www/newsxpress/public_html/cron/track_agency_revenue.php >> /var/log/nxl_cron.log 2>&1
 0 0 1 * * www-data php /var/www/newsxpress/public_html/cron/monthly_agency_payout.php >> /var/log/nxl_cron.log 2>&1
 0 0 1 * * www-data php /var/www/newsxpress/public_html/cron/reset_monthly_caps.php >> /var/log/nxl_cron.log 2>&1
