@@ -64,7 +64,17 @@ Engineering work includes:
 
 ## Screenshots
 
-Screenshots and additional product documentation can be added here as the project documentation is expanded.
+<div align="center">
+
+<img src="./home.webp" width="220" alt="News Xpress Live Home Feed">
+
+<img src="./shorts.webp" width="220" alt="News Xpress Live Short News">
+
+<img src="./create.webp" width="220" alt="News Xpress Live Citizen Create">
+
+<img src="./reporter.webp" width="220" alt="News Xpress Live Reporter Dashboard">
+
+</div>
 
 ## Future Improvements
 
