@@ -113,6 +113,23 @@ Security is treated as part of the application architecture rather than as an af
 
 Sensitive credentials, API keys, passwords and other secrets are not intended to be stored in the public repository.
 
+## Deployment & Maintenance
+
+News Xpress Live is deployed as a live production application and is actively maintained.
+
+Production engineering work includes:
+
+- Application deployment
+- Backend and API maintenance
+- Database maintenance
+- Bug fixing and troubleshooting
+- Feature updates
+- Security improvements
+- Performance optimization
+- Production issue resolution
+
+The project is maintained with a focus on reliability, maintainability and continuous improvement.
+
 ## Production & Maintenance
 
 The application is deployed as a live production product and is actively maintained.
