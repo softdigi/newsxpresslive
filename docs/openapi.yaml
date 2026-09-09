@@ -1,0 +1,568 @@
+openapi: 3.0.3
+info:
+  title: NewsXpressLive API
+  description: |
+    REST API for the NewsXpressLive mobile & web platform.
+
+    **Authentication**
+    All protected endpoints require a Firebase ID Token (JWT) in the
+    `Authorization: Bearer <id_token>` header.  The server verifies the
+    token's signature against Google's public keys.
+
+    **Pagination**
+    Feed endpoints use keyset (cursor) pagination.  Pass `last_id` and
+    `last_created_at` from the previous response to fetch the next page.
+  version: "1.0.0"
+  contact:
+    name: NewsXpressLive Engineering
+servers:
+  - url: https://api.newsxpresslive.com/api/v1
+    description: Production
+  - url: https://staging-api.newsxpresslive.com/api/v1
+    description: Staging
+
+# ────────────────────────────────────────────────────────────────────────────
+# Security scheme
+# ────────────────────────────────────────────────────────────────────────────
+components:
+  securitySchemes:
+    FirebaseAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Firebase JWT
+      description: |
+        Firebase ID Token obtained from the Firebase SDK.
+        `FirebaseAuth.instance.currentUser?.getIdToken()`
+
+  # ── Reusable schemas ──────────────────────────────────────────────────────
+  schemas:
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Field 'title' is required"
+
+    SuccessEnvelope:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+        message:
+          type: string
+          example: ""
+
+    NewsArticleSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 42
+        title:
+          type: string
+          example: "Breaking: Parliament session extended"
+        slug:
+          type: string
+          example: "breaking-parliament-session-extended-1700000000"
+        description:
+          type: string
+          example: "The parliament session has been extended by two weeks…"
+        category_id:
+          type: integer
+          example: 3
+        language_id:
+          type: integer
+          example: 1
+        featured_image:
+          type: string
+          nullable: true
+          format: uri
+          example: "https://cdn.newsxpresslive.com/images/article-42.jpg"
+        is_breaking:
+          type: boolean
+          example: false
+        viral_score:
+          type: integer
+          example: 1250
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T09:30:00Z"
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 101
+        news_id:
+          type: integer
+          example: 42
+        author_name:
+          type: string
+          example: "Priya Sharma"
+        content:
+          type: string
+          example: "Great article, very informative!"
+        status:
+          type: string
+          enum: [approved, pending, spam]
+          example: approved
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:05:00Z"
+
+    PaginationCursor:
+      type: object
+      properties:
+        has_more:
+          type: boolean
+          example: true
+        next_last_id:
+          type: integer
+          nullable: true
+          example: 38
+        next_last_created_at:
+          type: string
+          nullable: true
+          format: date-time
+          example: "2024-01-14T18:00:00Z"
+
+# ────────────────────────────────────────────────────────────────────────────
+# Paths
+# ────────────────────────────────────────────────────────────────────────────
+paths:
+
+  # ── GET /news/feed ─────────────────────────────────────────────────────────
+  /news/feed:
+    get:
+      summary: Get paginated news feed
+      description: |
+        Returns the latest approved articles in reverse-chronological order.
+
+        Uses **keyset (cursor) pagination**.  On the first request omit
+        `last_id` and `last_created_at`.  Each response includes cursor
+        values to pass in the next request.
+      tags:
+        - News
+      parameters:
+        - name: category_slug
+          in: query
+          description: Filter by category slug (e.g. `politics`, `sports`)
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: |
+            `viral` — sort by viral_score DESC instead of created_at DESC.
+            Omit for default chronological order.
+          schema:
+            type: string
+            enum: [viral]
+        - name: last_id
+          in: query
+          description: ID cursor from previous page response (`next_last_id`)
+          schema:
+            type: integer
+        - name: last_created_at
+          in: query
+          description: Timestamp cursor from previous page (`next_last_created_at`)
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          description: Number of articles per page (default 20, max 50)
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+      responses:
+        "200":
+          description: Paginated list of articles
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          articles:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/NewsArticleSummary'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationCursor'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── POST /submit_news ──────────────────────────────────────────────────────
+  /submit_news:
+    post:
+      summary: Submit a news article
+      description: |
+        Submit a new article for review.  The article is created with
+        `status = pending` and reviewed by an editor before publication.
+      tags:
+        - News
+      security:
+        - FirebaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - description
+                - category_id
+                - language_id
+              properties:
+                title:
+                  type: string
+                  maxLength: 255
+                  example: "City council approves new road project"
+                description:
+                  type: string
+                  example: "The city council voted 9-2 in favour of the new ring road…"
+                category_id:
+                  type: integer
+                  example: 2
+                language_id:
+                  type: integer
+                  example: 1
+                country_id:
+                  type: integer
+                  nullable: true
+                state_id:
+                  type: integer
+                  nullable: true
+                district_id:
+                  type: integer
+                  nullable: true
+                meta_title:
+                  type: string
+                  nullable: true
+                meta_description:
+                  type: string
+                  nullable: true
+                moderation_flag:
+                  type: integer
+                  enum: [0, 1]
+                  default: 0
+                  description: |
+                    Set to `1` if the submitter believes the content
+                    is sensitive or needs immediate review.
+      responses:
+        "200":
+          description: Article submitted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          news_id:
+                            type: integer
+                            example: 99
+                          slug:
+                            type: string
+                            example: "city-council-approves-new-road-project-1700001234"
+        "400":
+          description: Validation error (missing required field)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Missing or invalid Firebase token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── /comments ──────────────────────────────────────────────────────────────
+  /comments:
+    get:
+      summary: Get comments for an article
+      tags:
+        - Comments
+      parameters:
+        - name: news_id
+          in: query
+          required: true
+          schema:
+            type: integer
+          example: 42
+        - name: last_id
+          in: query
+          schema:
+            type: integer
+          description: Cursor for comment pagination
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: List of approved comments
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          comments:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Comment'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationCursor'
+        "400":
+          description: Missing news_id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Post a comment on an article
+      tags:
+        - Comments
+      security:
+        - FirebaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - news_id
+                - content
+                - author_name
+              properties:
+                news_id:
+                  type: integer
+                  example: 42
+                author_name:
+                  type: string
+                  maxLength: 100
+                  example: "Ramesh Kumar"
+                author_email:
+                  type: string
+                  format: email
+                  nullable: true
+                content:
+                  type: string
+                  maxLength: 2000
+                  example: "Very insightful, thank you!"
+      responses:
+        "200":
+          description: Comment submitted (may be pending moderation)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+        "400":
+          description: Validation error or blocked by moderation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── POST /auth/login ───────────────────────────────────────────────────────
+  /auth/login:
+    post:
+      summary: Authenticate and fetch user profile
+      description: |
+        Verifies the Firebase ID token and returns the NewsXpressLive user
+        profile.  Creates a new user record if this is the first login.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id_token
+              properties:
+                id_token:
+                  type: string
+                  description: Firebase ID token (JWT) from the client SDK
+                  example: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9…"
+                fcm_token:
+                  type: string
+                  nullable: true
+                  description: FCM device token for push notifications
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                                example: 7
+                              name:
+                                type: string
+                                example: "Priya Sharma"
+                              role:
+                                type: string
+                                enum: [user, reporter, editor, admin, super_admin]
+                                example: reporter
+                              status:
+                                type: string
+                                example: active
+        "401":
+          description: Invalid or expired Firebase token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Account suspended or banned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── POST /wallet/withdraw ──────────────────────────────────────────────────
+  /wallet/withdraw:
+    post:
+      summary: Request a wallet withdrawal
+      description: |
+        Initiates a payout request for the authenticated reporter's earned
+        balance.  Requires `KYC_verified = 1` on the user row.
+      tags:
+        - Wallet
+      security:
+        - FirebaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+                - payment_method
+              properties:
+                amount:
+                  type: number
+                  format: float
+                  minimum: 1
+                  example: 500.00
+                payment_method:
+                  type: string
+                  enum: [upi, bank_transfer, paytm]
+                  example: upi
+                upi_id:
+                  type: string
+                  nullable: true
+                  example: "reporter@upi"
+                bank_account:
+                  type: string
+                  nullable: true
+                  description: Account number (required when payment_method = bank_transfer)
+                ifsc_code:
+                  type: string
+                  nullable: true
+                  description: IFSC code (required when payment_method = bank_transfer)
+      responses:
+        "200":
+          description: Withdrawal request created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          request_id:
+                            type: integer
+                            example: 123
+                          status:
+                            type: string
+                            example: pending
+        "400":
+          description: Insufficient balance or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: KYC not verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+# ── Tag descriptions ──────────────────────────────────────────────────────────
+tags:
+  - name: News
+    description: Article feed and submission endpoints
+  - name: Comments
+    description: Comment read and submission endpoints
+  - name: Auth
+    description: Authentication and session endpoints
+  - name: Wallet
+    description: Reporter earnings and payout endpoints

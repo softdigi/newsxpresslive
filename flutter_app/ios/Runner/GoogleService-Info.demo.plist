@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+
+<!--
+  ================================================================
+  DEMO / TEMPLATE FILE — NOT a real config. Safe to commit.
+  Real file location: ios/Runner/GoogleService-Info.plist
+
+  REAL FILE KAISE MILEGI:
+    1. Firebase Console → Project Settings → Your Apps
+    2. iOS app add karo (bundle ID: com.yourcompany.newsxpresslive)
+    3. 'GoogleService-Info.plist' download karo
+    4. Xcode mein add karo: ios/Runner/GoogleService-Info.plist
+       (File Manager se copy mat karo — Xcode ke zariye drag & drop karo)
+
+  YA FlutterFire CLI use karo (recommended):
+    flutterfire configure --project=your-firebase-project-id
+  ================================================================
+-->
+
+<plist version="1.0">
+<dict>
+  <!-- Firebase project info -->
+  <key>PROJECT_ID</key>
+  <string>your-firebase-project-id</string>
+
+  <key>BUNDLE_ID</key>
+  <string>com.yourcompany.newsxpresslive</string>
+
+  <key>GOOGLE_APP_ID</key>
+  <string>1:YOUR_PROJECT_NUMBER:ios:YOUR_IOS_APP_ID</string>
+
+  <key>API_KEY</key>
+  <string>YOUR_IOS_API_KEY</string>
+
+  <key>GCM_SENDER_ID</key>
+  <string>YOUR_PROJECT_NUMBER</string>
+
+  <!-- Google Sign-In client ID -->
+  <key>CLIENT_ID</key>
+  <string>YOUR_PROJECT_NUMBER-YOUR_HASH.apps.googleusercontent.com</string>
+
+  <key>REVERSED_CLIENT_ID</key>
+  <string>com.googleusercontent.apps.YOUR_PROJECT_NUMBER-YOUR_HASH</string>
+
+  <!-- Firebase Storage -->
+  <key>STORAGE_BUCKET</key>
+  <string>your-firebase-project-id.appspot.com</string>
+
+  <!-- Firebase Realtime Database -->
+  <key>DATABASE_URL</key>
+  <string>https://your-firebase-project-id-default-rtdb.firebaseio.com</string>
+
+  <key>IS_ADS_ENABLED</key>
+  <false/>
+  <key>IS_ANALYTICS_ENABLED</key>
+  <false/>
+  <key>IS_APPINVITE_ENABLED</key>
+  <true/>
+  <key>IS_GCM_ENABLED</key>
+  <true/>
+  <key>IS_SIGNIN_ENABLED</key>
+  <true/>
+</dict>
+</plist>

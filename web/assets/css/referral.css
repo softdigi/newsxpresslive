@@ -1,0 +1,346 @@
+/* ============================================================
+   NewsXpressLive – referral.css
+   Refer & Earn dashboard + leaderboard page styles
+   ============================================================ */
+
+/* ── Page hero ────────────────────────────────────────────── */
+.referral-hero {
+    background: linear-gradient(135deg, #e50914 0%, #b0060f 100%);
+    color: #fff;
+    padding: 2.5rem 1.5rem 2rem;
+    text-align: center;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+}
+.referral-hero h1 {
+    font-size: 1.8rem;
+    font-weight: 900;
+    margin: 0 0 .5rem;
+}
+.referral-hero p {
+    font-size: 1rem;
+    opacity: .9;
+    margin: 0;
+}
+
+/* ── Stats grid ───────────────────────────────────────────── */
+.referral-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+@media (min-width: 600px) { .referral-stats { grid-template-columns: repeat(4, 1fr); } }
+
+.referral-stat-card {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 10px;
+    padding: 1.2rem 1rem;
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+.referral-stat-card__value {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--color-primary, #e50914);
+    line-height: 1;
+}
+.referral-stat-card__label {
+    font-size: .75rem;
+    color: #777;
+    margin-top: .4rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+/* ── Referral code box ────────────────────────────────────── */
+.referral-code-box {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+.referral-code-box h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 1rem;
+    color: var(--color-dark, #111);
+}
+
+.referral-code-display {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    flex-wrap: wrap;
+}
+.referral-code-chip {
+    font-size: 1.6rem;
+    font-weight: 900;
+    letter-spacing: .25em;
+    color: var(--color-primary, #e50914);
+    background: #fff3f3;
+    border: 2px dashed var(--color-primary, #e50914);
+    border-radius: 8px;
+    padding: .5rem 1.2rem;
+    font-family: 'Courier New', monospace;
+    flex: 1;
+    text-align: center;
+}
+.referral-copy-btn {
+    background: var(--color-primary, #e50914);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: .6rem 1.2rem;
+    font-weight: 700;
+    font-size: .9rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .2s;
+}
+.referral-copy-btn:hover  { background: var(--color-primary-dk, #b0060f); }
+.referral-copy-btn.copied { background: #28a745; }
+
+.referral-url-row {
+    margin-top: .75rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+.referral-url-input {
+    flex: 1;
+    min-width: 0;
+    padding: .5rem .75rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: .82rem;
+    color: #555;
+    background: #f9f9f9;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.referral-copy-link-btn {
+    background: #111;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: .5rem .9rem;
+    font-weight: 600;
+    font-size: .82rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .2s;
+}
+.referral-copy-link-btn:hover { background: #333; }
+
+/* ── Share buttons ────────────────────────────────────────── */
+.referral-share-row {
+    display: flex;
+    gap: .6rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+.referral-share-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .55rem 1rem;
+    border-radius: 7px;
+    font-weight: 700;
+    font-size: .85rem;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: opacity .15s;
+}
+.referral-share-btn:hover { opacity: .85; }
+.referral-share-btn--wa { background: #25D366; color: #fff; }
+.referral-share-btn--tw { background: #1DA1F2; color: #fff; }
+.referral-share-btn--fb { background: #1877F2; color: #fff; }
+.referral-share-btn--copy { background: #555; color: #fff; }
+
+/* ── How it works ─────────────────────────────────────────── */
+.referral-how {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+.referral-how h2 { font-size:1rem; font-weight:700; margin:0 0 1rem; }
+
+.referral-steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+}
+.referral-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: .5rem;
+}
+.referral-step__icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #fff3f3;
+    color: var(--color-primary, #e50914);
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.referral-step__title  { font-weight: 700; font-size: .88rem; }
+.referral-step__points {
+    font-size: .78rem;
+    color: var(--color-primary, #e50914);
+    font-weight: 700;
+}
+.referral-step__desc   { font-size: .78rem; color: #777; }
+
+/* ── Reward history table ─────────────────────────────────── */
+.referral-history {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    overflow-x: auto;
+}
+.referral-history h2 { font-size:1rem; font-weight:700; margin:0 0 1rem; }
+
+.referral-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .85rem;
+}
+.referral-table th {
+    text-align: left;
+    padding: .5rem .75rem;
+    border-bottom: 2px solid #e8e8e8;
+    color: #555;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.referral-table td {
+    padding: .55rem .75rem;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+}
+.referral-table tr:last-child td { border-bottom: none; }
+
+.referral-level-badge {
+    display: inline-block;
+    padding: .15rem .45rem;
+    border-radius: 12px;
+    font-size: .72rem;
+    font-weight: 700;
+    background: #f0f0f0;
+    color: #555;
+}
+.referral-level-badge--1 { background: #fff3f3; color: #e50914; }
+.referral-level-badge--2 { background: #fff8e1; color: #f57c00; }
+.referral-level-badge--3 { background: #e8f5e9; color: #388e3c; }
+
+.referral-points-cell {
+    font-weight: 700;
+    color: var(--color-primary, #e50914);
+}
+
+/* ── Leaderboard ──────────────────────────────────────────── */
+.referral-leaderboard {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+.referral-leaderboard h2 { font-size:1rem; font-weight:700; margin:0 0 1rem; }
+
+.leaderboard-list { list-style: none; padding: 0; margin: 0; }
+.leaderboard-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: .7rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.leaderboard-item:last-child { border-bottom: none; }
+
+.leaderboard-rank {
+    font-size: 1rem;
+    font-weight: 900;
+    width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+    color: #aaa;
+}
+.leaderboard-rank--1 { color: #FFD700; font-size: 1.3rem; }
+.leaderboard-rank--2 { color: #C0C0C0; font-size: 1.1rem; }
+.leaderboard-rank--3 { color: #CD7F32; font-size: 1rem; }
+
+.leaderboard-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: .95rem;
+    color: var(--color-primary, #e50914);
+    flex-shrink: 0;
+}
+.leaderboard-info { flex: 1; min-width: 0; }
+.leaderboard-name {
+    font-weight: 700;
+    font-size: .92rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.leaderboard-meta { font-size: .75rem; color: #888; margin-top: 1px; }
+.leaderboard-points {
+    font-weight: 900;
+    color: var(--color-primary, #e50914);
+    font-size: .95rem;
+    flex-shrink: 0;
+}
+
+/* ── Login CTA ────────────────────────────────────────────── */
+.referral-login-cta {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+.referral-login-cta h2 { font-size: 1.2rem; font-weight: 800; margin-bottom: .5rem; }
+.referral-login-cta p  { color: #666; margin-bottom: 1.2rem; font-size: .9rem; }
+.btn-primary {
+    display: inline-block;
+    background: var(--color-primary, #e50914);
+    color: #fff;
+    font-weight: 700;
+    font-size: .95rem;
+    padding: .7rem 1.8rem;
+    border-radius: 8px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: background .2s;
+}
+.btn-primary:hover { background: var(--color-primary-dk, #b0060f); }

@@ -1,0 +1,126 @@
+/**
+ * rtl.css – RTL (Right-to-Left) layout overrides
+ * NewsXpressLive
+ *
+ * Applied when <html dir="rtl"> is set (Urdu / Arabic / Persian).
+ * All existing LTR rules remain intact; only directional properties
+ * are overridden here to keep the diff minimal.
+ */
+
+/* ── Base direction ──────────────────────────────────────────────────── */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+/* ── Body & layout ───────────────────────────────────────────────────── */
+[dir="rtl"] body {
+  font-family: 'Noto Nastaliq Urdu', 'Noto Naskh Arabic', Arial, sans-serif;
+}
+
+/* ── Navbar ──────────────────────────────────────────────────────────── */
+[dir="rtl"] .navbar-nav {
+  padding-right: 0;
+  padding-left: 1rem;
+}
+[dir="rtl"] .navbar-brand {
+  margin-right: 0;
+  margin-left: 1rem;
+}
+[dir="rtl"] .navbar-toggler {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+/* ── Cards & articles ────────────────────────────────────────────────── */
+[dir="rtl"] .card-body {
+  text-align: right;
+}
+[dir="rtl"] .article-meta {
+  direction: rtl;
+  text-align: right;
+}
+[dir="rtl"] .article-content {
+  text-align: right;
+  direction: rtl;
+}
+[dir="rtl"] .article-content p,
+[dir="rtl"] .article-content h1,
+[dir="rtl"] .article-content h2,
+[dir="rtl"] .article-content h3,
+[dir="rtl"] .article-content h4 {
+  text-align: right;
+}
+
+/* ── Breadcrumbs ─────────────────────────────────────────────────────── */
+[dir="rtl"] .breadcrumb {
+  padding-right: 0;
+  flex-direction: row-reverse;
+}
+[dir="rtl"] .breadcrumb-item + .breadcrumb-item::before {
+  padding-right: 0;
+  padding-left: 0.5rem;
+  float: right;
+  content: "\\";
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────── */
+[dir="rtl"] .sidebar {
+  text-align: right;
+  direction: rtl;
+}
+[dir="rtl"] .sidebar ul {
+  padding-right: 0;
+}
+
+/* ── Category dropdown ───────────────────────────────────────────────── */
+[dir="rtl"] .dropdown-menu {
+  text-align: right;
+  right: 0;
+  left: auto;
+}
+
+/* ── Search ──────────────────────────────────────────────────────────── */
+[dir="rtl"] .search-form input[type="text"],
+[dir="rtl"] .search-form input[type="search"] {
+  text-align: right;
+  padding-right: 1rem;
+  padding-left: 2.5rem;
+}
+[dir="rtl"] .search-form .search-icon {
+  right: auto;
+  left: 0.75rem;
+}
+
+/* ── Pagination ──────────────────────────────────────────────────────── */
+[dir="rtl"] .pagination {
+  direction: rtl;
+}
+
+/* ── Language picker ─────────────────────────────────────────────────── */
+[dir="rtl"] .language-selector {
+  direction: rtl;
+}
+[dir="rtl"] .language-chip {
+  text-align: right;
+}
+
+/* ── Margins / paddings ──────────────────────────────────────────────── */
+[dir="rtl"] .ms-auto  { margin-right: auto !important; margin-left: 0 !important; }
+[dir="rtl"] .me-auto  { margin-left: auto !important;  margin-right: 0 !important; }
+[dir="rtl"] .ms-1     { margin-right: .25rem !important; margin-left: 0 !important; }
+[dir="rtl"] .ms-2     { margin-right: .5rem  !important; margin-left: 0 !important; }
+[dir="rtl"] .ms-3     { margin-right: 1rem   !important; margin-left: 0 !important; }
+[dir="rtl"] .me-1     { margin-left: .25rem  !important; margin-right: 0 !important; }
+[dir="rtl"] .me-2     { margin-left: .5rem   !important; margin-right: 0 !important; }
+[dir="rtl"] .me-3     { margin-left: 1rem    !important; margin-right: 0 !important; }
+[dir="rtl"] .ps-0     { padding-left: 0 !important; padding-right: 0 !important; }
+[dir="rtl"] .pe-0     { padding-right: 0 !important; padding-left: 0 !important; }
+[dir="rtl"] .text-start { text-align: right !important; }
+[dir="rtl"] .text-end   { text-align: left  !important; }
+[dir="rtl"] .float-start { float: right !important; }
+[dir="rtl"] .float-end   { float: left  !important; }
+
+/* ── Icons that indicate direction ───────────────────────────────────── */
+[dir="rtl"] .bi-arrow-right::before { content: "\f12a"; }  /* flip arrow */
+[dir="rtl"] .chevron-right          { transform: scaleX(-1); }

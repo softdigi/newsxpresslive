@@ -1,0 +1,54 @@
+{
+  "_comment": "================================================================",
+  "_comment2": "DEMO / TEMPLATE FILE — NOT a real config. Safe to commit.",
+  "_comment3": "Real file location: android/app/google-services.json",
+  "_comment4": "",
+  "_comment5": "REAL FILE KAISE MILEGI:",
+  "_comment6": "  1. Firebase Console → Project Settings → Your Apps",
+  "_comment7": "  2. Android app add karo (package name: com.yourcompany.newsxpresslive)",
+  "_comment8": "  3. 'google-services.json' download karo",
+  "_comment9": "  4. Rakho: android/app/google-services.json",
+  "_comment10": "",
+  "_comment11": "YA FlutterFire CLI use karo (recommended):",
+  "_comment12": "  flutterfire configure --project=your-firebase-project-id",
+  "_comment13": "================================================================",
+
+  "project_info": {
+    "project_number":        "YOUR_PROJECT_NUMBER",
+    "project_id":            "your-firebase-project-id",
+    "storage_bucket":        "your-firebase-project-id.appspot.com",
+    "firebase_url":          "https://your-firebase-project-id-default-rtdb.firebaseio.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id":  "1:YOUR_PROJECT_NUMBER:android:YOUR_ANDROID_APP_ID",
+        "android_client_info": {
+          "package_name":    "com.yourcompany.newsxpresslive"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id":       "YOUR_PROJECT_NUMBER-YOUR_CLIENT_HASH.apps.googleusercontent.com",
+          "client_type":     3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key":     "YOUR_ANDROID_API_KEY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id":   "YOUR_PROJECT_NUMBER-YOUR_CLIENT_HASH.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,190 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'providers/bookmark_provider.dart';
+import 'providers/offline_provider.dart';
+import 'presentation/screens/home/home_screen.dart';
+import 'presentation/screens/search/search_screen.dart';
+import 'presentation/screens/bookmarks/bookmarks_screen.dart';
+import 'presentation/screens/offline/offline_screen.dart';
+import 'presentation/screens/reels/reels_screen.dart';
+import 'presentation/screens/complaints/complaints_screen.dart';
+import 'presentation/screens/social/social_feed_screen.dart';
+import 'presentation/screens/mandi/mandi_home_screen.dart';
+import 'presentation/screens/listings/listing_feed_screen.dart';
+import 'presentation/screens/live/live_feed_screen.dart';
+import 'presentation/screens/quiz/quiz_screen.dart';
+import 'presentation/screens/settings/settings_screen.dart';
+import 'data/services/social_service.dart';
+import 'data/services/api_service.dart';
+import 'core/constants/app_strings.dart';
+import 'core/constants/app_colors.dart';
+
+/// Main scaffold with BottomNavigationBar.
+///
+/// Access via [mainNavKey] to switch tabs programmatically:
+///   mainNavKey.currentState?.switchTab(1);
+final GlobalKey<MainNavigationState> mainNavKey = GlobalKey<MainNavigationState>();
+
+class MainNavigation extends StatefulWidget {
+  const MainNavigation({super.key});
+
+  @override
+  MainNavigationState createState() => MainNavigationState();
+}
+
+class MainNavigationState extends State<MainNavigation> {
+  int _currentIndex = 0;
+
+  /// Social service backed by an unauthenticated ApiService by default.
+  /// Screens that need the follow button should receive an ApiService
+  /// with idTokenProvider set (injected via a provider or passed directly).
+  final _socialService = SocialService(api: ApiService());
+
+  static List<Widget> _buildScreens(SocialService socialService) => [
+    const HomeScreen(),
+    const SearchScreen(),
+    const ReelsScreen(),
+    const LiveFeedScreen(),
+    const MandiHomeScreen(),
+    const ListingFeedScreen(),
+    const ComplaintsScreen(),
+    SocialFeedScreen(socialService: socialService),
+    const QuizScreen(),
+    const BookmarksScreen(),
+    const OfflineScreen(),
+    const SettingsScreen(),
+  ];
+
+  /// Switch to tab [index] from anywhere in the app.
+  void switchTab(int index) {
+    if (index < 0 || index >= _buildScreens(_socialService).length) return;
+    setState(() => _currentIndex = index);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: GestureDetector(
+        // Horizontal swipe to switch tabs.
+        // A drag is counted as a tab-switch when it travels more than 50 px
+        // horizontally while remaining mostly horizontal (horizontal component
+        // must be at least twice the vertical component).
+        onHorizontalDragEnd: (details) {
+          final vx = details.velocity.pixelsPerSecond.dx;
+          final vy = details.velocity.pixelsPerSecond.dy.abs();
+          if (vx.abs() < 200 || vy > vx.abs()) return; // too slow or too diagonal
+          if (vx < 0) {
+            // swipe left → next tab
+            if (_currentIndex < _buildScreens(_socialService).length - 1) {
+              setState(() => _currentIndex++);
+            }
+          } else {
+            // swipe right → previous tab
+            if (_currentIndex > 0) {
+              setState(() => _currentIndex--);
+            }
+          }
+        },
+        child: IndexedStack(
+          index: _currentIndex,
+          children: _buildScreens(_socialService),
+        ),
+      ),
+      bottomNavigationBar: Consumer2<BookmarkProvider, OfflineProvider>(
+        builder: (context, bm, offline, _) => BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (i) => setState(() => _currentIndex = i),
+          items: [
+            const BottomNavigationBarItem(
+              icon:       Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home_rounded),
+              label:      AppStrings.navHome,
+            ),
+            const BottomNavigationBarItem(
+              icon:       Icon(Icons.search_outlined),
+              activeIcon: Icon(Icons.search_rounded),
+              label:      AppStrings.navSearch,
+            ),
+            const BottomNavigationBarItem(
+              icon:       Icon(Icons.video_library_outlined),
+              activeIcon: Icon(Icons.video_library_rounded),
+              label:      AppStrings.navReels,
+            ),
+            const BottomNavigationBarItem(
+              icon:       Icon(Icons.live_tv_outlined),
+              activeIcon: Icon(Icons.live_tv_rounded),
+              label:      AppStrings.navLive,
+            ),
+            const BottomNavigationBarItem(
+              icon:       Icon(Icons.storefront_outlined),
+              activeIcon: Icon(Icons.storefront_rounded),
+              label:      AppStrings.navMandi,
+            ),
+            const BottomNavigationBarItem(
+              icon:       Icon(Icons.local_mall_outlined),
+              activeIcon: Icon(Icons.local_mall_rounded),
+              label:      AppStrings.navBazaar,
+            ),
+            const BottomNavigationBarItem(
+              icon:       Icon(Icons.campaign_outlined),
+              activeIcon: Icon(Icons.campaign_rounded),
+              label:      AppStrings.navComplaints,
+            ),
+            const BottomNavigationBarItem(
+              icon:       Icon(Icons.people_outline_rounded),
+              activeIcon: Icon(Icons.people_rounded),
+              label:      AppStrings.navSocial,
+            ),
+            const BottomNavigationBarItem(
+              icon:       Icon(Icons.quiz_outlined),
+              activeIcon: Icon(Icons.quiz_rounded),
+              label:      AppStrings.navQuiz,
+            ),
+            BottomNavigationBarItem(
+              icon:       _bookmarkIcon(bm.count, false),
+              activeIcon: _bookmarkIcon(bm.count, true),
+              label:      AppStrings.navBookmarks,
+            ),
+            BottomNavigationBarItem(
+              icon:       _offlineIcon(offline.count, false),
+              activeIcon: _offlineIcon(offline.count, true),
+              label:      AppStrings.navOffline,
+            ),
+            const BottomNavigationBarItem(
+              icon:       Icon(Icons.settings_outlined),
+              activeIcon: Icon(Icons.settings_rounded),
+              label:      AppStrings.navSettings,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _bookmarkIcon(int count, bool active) {
+    final icon = Icon(active
+        ? Icons.bookmark_rounded
+        : Icons.bookmark_border_rounded);
+    if (count == 0) return icon;
+    return Badge(
+      backgroundColor: AppColors.primary,
+      label: Text(count > 99 ? '99+' : count.toString(),
+          style: const TextStyle(fontSize: 9)),
+      child: icon,
+    );
+  }
+
+  Widget _offlineIcon(int count, bool active) {
+    final icon = Icon(active
+        ? Icons.download_for_offline_rounded
+        : Icons.download_for_offline_outlined);
+    if (count == 0) return icon;
+    return Badge(
+      backgroundColor: AppColors.primary,
+      label: Text(count > 99 ? '99+' : count.toString(),
+          style: const TextStyle(fontSize: 9)),
+      child: icon,
+    );
+  }
+}
+

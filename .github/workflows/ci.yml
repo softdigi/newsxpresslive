@@ -1,0 +1,189 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────────
+  php-lint-test:
+    name: PHP Lint & Tests
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: newsxpresslive_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_NAME: newsxpresslive_test
+      DB_USER: root
+      DB_PASS: root
+      REDIS_HOST: 127.0.0.1
+      APP_ENV: testing
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_mysql, redis, mbstring, json, openssl
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: |
+          if [ -f composer.json ]; then
+            composer install --no-interaction --prefer-dist --optimize-autoloader
+          else
+            echo "No composer.json — skipping"
+          fi
+
+      - name: PHP syntax check
+        run: find web auth helpers -name "*.php" | xargs -n1 php -l
+
+      - name: Run database migrations
+        run: |
+          for sql in db/migrations.sql db/migration_v2.sql db/migration_v3_agency_partner.sql \
+                     db/migration_v4_admob_payout.sql db/migration_v5_geo_coordinates.sql \
+                     db/migration_v6_personalization.sql db/migration_v7_complaints.sql \
+                     db/migration_v8_social.sql db/migration_v9_complaints_enhanced.sql \
+                     db/migration_v10_mandi.sql db/migration_v11_listings.sql \
+                     db/migration_v12_live.sql db/migration_v13_languages.sql \
+                     db/migration_v14_polls.sql db/migration_v15_global_languages.sql \
+                     db/migration_v16_performance.sql; do
+            if [ -f "$sql" ]; then
+              mysql -h 127.0.0.1 -u root -proot newsxpresslive_test < "$sql" || true
+            fi
+          done
+
+      - name: Run PHPUnit tests
+        run: phpunit --configuration phpunit.xml --no-coverage
+
+  # ──────────────────────────────────────────────────────────────────────────
+  flutter-analyze:
+    name: Flutter Analyze
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Flutter pub get
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Flutter analyze
+        working-directory: flutter_app
+        run: flutter analyze --no-fatal-infos
+
+      - name: Flutter test
+        working-directory: flutter_app
+        run: flutter test --no-pub
+
+  # ──────────────────────────────────────────────────────────────────────────
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [ php-lint-test ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Check for wildcard CORS
+        run: |
+          if grep -rn "Access-Control-Allow-Origin: \*" web/api/ --include="*.php"; then
+            echo "ERROR: Wildcard CORS found in API files"
+            exit 1
+          fi
+          echo "CORS check passed"
+
+      - name: Check for hardcoded secrets
+        run: |
+          if grep -rn "password.*=.*['\"][^'\"]\+['\"]" web/ --include="*.php" | \
+             grep -v "env\|getenv\|config\|example\|test\|placeholder\|change-me"; then
+            echo "WARNING: Possible hardcoded credentials found"
+          fi
+
+  # ──────────────────────────────────────────────────────────────────────────
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [ php-lint-test, flutter-analyze, security-scan ]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            cd /var/www/newsxpresslive-staging
+            git pull origin develop
+            for sql in db/migration_v*.sql; do
+              mysql -u $DB_USER -p$DB_PASS $DB_NAME < "$sql" || true
+            done
+            php artisan cache:clear 2>/dev/null || true
+
+  # ──────────────────────────────────────────────────────────────────────────
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [ php-lint-test, flutter-analyze, security-scan ]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /var/www/newsxpresslive
+            git pull origin main
+            for sql in db/migration_v*.sql; do
+              mysql -u $DB_USER -p$DB_PASS $DB_NAME < "$sql" || true
+            done

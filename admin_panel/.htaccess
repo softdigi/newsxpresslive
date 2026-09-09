@@ -1,0 +1,59 @@
+# ============================================================
+# PRODUCTION .htaccess — Admin Panel Root
+# Place this in: /admin_panel/.htaccess
+# ============================================================
+
+# Block directory listing
+Options -Indexes
+
+# Block direct access to sensitive directories
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block direct access to includes/ folder
+    RewriteRule ^includes/         - [F,L]
+
+    # Block error_log files from being served
+    RewriteRule ^.*error_log$      - [F,L]
+    RewriteRule ^.*\.log$          - [F,L]
+
+    # Block direct access to config files
+    RewriteRule ^.*config\.php$    - [F,L]
+
+    # Force HTTPS (uncomment when SSL is active)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# Block access to error_log files
+<FilesMatch "^error_log$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Security headers
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options            "DENY"
+    Header always set X-Content-Type-Options     "nosniff"
+    Header always set X-XSS-Protection           "1; mode=block"
+    Header always set Referrer-Policy            "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy         "camera=(), microphone=(), geolocation=()"
+
+    # Strict CSP — adjust if you use external CDNs
+    # Header always set Content-Security-Policy "default-src 'self'; script-src 'self' https://cdn.tiny.cloud https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;"
+
+    # Remove PHP version from headers
+    Header unset X-Powered-By
+</IfModule>
+
+# Prevent PHP errors from leaking (backup — also set in php.ini)
+php_flag  display_errors       Off
+php_flag  log_errors           On
+php_value error_reporting      32767
+
+# Session security (backup — also set in config.php)
+php_value session.cookie_httponly 1
+php_value session.cookie_samesite Strict
+# php_value session.cookie_secure   1  # Uncomment when HTTPS active
+php_value session.use_strict_mode 1
+php_value session.gc_maxlifetime  7200
