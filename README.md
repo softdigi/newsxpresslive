@@ -72,6 +72,26 @@ News Xpress Live follows an API-driven architecture that separates the mobile ap
 │ Roles • Application Data│
 └─────────────────────────┘
 
+
+## API & Backend
+
+The backend provides REST APIs that act as the communication layer between the mobile application and server-side services.
+
+The API layer is responsible for handling application data and business operations such as:
+
+- User authentication
+- User management
+- News retrieval and publishing
+- Personalized content delivery
+- Location-based filtering
+- Reporter workflows
+- Content processing
+- Application data management
+
+The Flutter application communicates with the backend through these APIs rather than directly accessing the database.
+
+This separation helps keep the client application independent from the underlying database and server-side implementation.
+
 ## Production & Maintenance
 
 The application is deployed as a live production product and is actively maintained.
