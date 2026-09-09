@@ -47,6 +47,31 @@ The project is developed as an API-driven production system.
 
 The separation between the mobile application and backend services allows the platform to evolve independently and provides a foundation for extending the product to additional clients or technologies in the future.
 
+## Architecture
+
+News Xpress Live follows an API-driven architecture that separates the mobile application from backend services and data storage.
+
+```text
+┌─────────────────────────┐
+│   Flutter Mobile App    │
+│       Dart / UI         │
+└────────────┬────────────┘
+             │
+             │ REST API
+             ▼
+┌─────────────────────────┐
+│      PHP Backend        │
+│ Business Logic & APIs   │
+│ Authentication & Roles  │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────┐
+│       MySQL Database    │
+│ Users • News • Content  │
+│ Roles • Application Data│
+└─────────────────────────┘
+
 ## Production & Maintenance
 
 The application is deployed as a live production product and is actively maintained.
