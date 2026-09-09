@@ -130,6 +130,36 @@ Production engineering work includes:
 
 The project is maintained with a focus on reliability, maintainability and continuous improvement.
 
+## Current Status
+
+News Xpress Live is a live production application available on the Google Play Store.
+
+The platform is actively maintained and continues to evolve through feature development, backend improvements, security updates, bug fixes and performance optimization.
+
+### Currently Implemented
+
+- Flutter mobile application
+- PHP backend
+- MySQL database
+- REST API architecture
+- Authentication
+- Role-based access
+- Admin panel
+- Reporter dashboard
+- Personalized news feed
+- Location-based news filtering
+- News publishing workflow
+- RSS/news ingestion
+- Xpress feature
+- AI-powered short news summaries
+
+### Production
+
+**Status:** Live
+
+**Platform:** Android / Google Play
+
+[View on Google Play](https://play.google.com/store/apps/details?id=com.softdigi.newsxpresslive&hl=en_IN)
 ## Production & Maintenance
 
 The application is deployed as a live production product and is actively maintained.
