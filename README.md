@@ -71,7 +71,11 @@ News Xpress Live follows an API-driven architecture that separates the mobile ap
 │ Users • News • Content  │
 │ Roles • Application Data│
 └─────────────────────────┘
+```
 
+Additional platform components support content ingestion, administration, reporting workflows and AI-powered news processing.
+
+This separation allows the application and backend services to evolve independently and provides a foundation for supporting additional clients or technologies in the future.
 
 ## API & Backend
 
@@ -91,6 +95,23 @@ The API layer is responsible for handling application data and business operatio
 The Flutter application communicates with the backend through these APIs rather than directly accessing the database.
 
 This separation helps keep the client application independent from the underlying database and server-side implementation.
+
+## Authentication & Security
+
+The platform includes authentication and access-control mechanisms to protect application functionality and user-specific data.
+
+Security-related engineering includes:
+
+- User authentication
+- Role-based access
+- Protected application functionality
+- User management
+- Secure communication between the application and backend APIs
+- Access control for different application workflows
+
+Security is treated as part of the application architecture rather than as an afterthought.
+
+Sensitive credentials, API keys, passwords and other secrets are not intended to be stored in the public repository.
 
 ## Production & Maintenance
 
